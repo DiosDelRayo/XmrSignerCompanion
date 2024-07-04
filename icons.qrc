@@ -1,0 +1,18 @@
+<RCC>
+    <qresource prefix="/">
+        <file>images/logo_black_240.png</file>
+        <file>images/logo_black_188.png</file>
+        <file>images/qr.png</file>
+    </qresource>
+    <qresource prefix="/icons">
+        <file>icons/Cam qr.svg</file>
+        <file>icons/Camera.svg</file>
+        <file>icons/Close.svg</file>
+        <file>icons/Finger print.svg</file>
+        <file>icons/Next.svg</file>
+        <file>icons/Past.svg</file>
+        <file>icons/Previous.svg</file>
+        <file>icons/Répertoire.svg</file>
+        <file>icons/Valid.svg</file>
+    </qresource>
+</RCC>

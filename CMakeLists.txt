@@ -19,6 +19,8 @@ set(PROJECT_SOURCES
         mainwindow.cpp
         mainwindow.h
         mainwindow.ui
+        qdotprogressindicator.h
+        qdotprogressindicator.cpp
         ${TS_FILES}
 )
 
@@ -26,6 +28,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(XmrSigner
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
+        qdotprogressindicator.h qdotprogressindicator.cpp
+        icons.qrc
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET XmrSigner APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
