@@ -104,9 +104,6 @@ MainWindow::MainWindow(QWidget *parent)
         case 7:
             ui->titleLabel->setText(QString("Import Signed Transaction"));
             break;
-        case 8:
-            ui->titleLabel->setText(QString("Sending..."));
-            break;
         default:
             ui->titleLabel->setText(QString(""));
         }
