@@ -364,7 +364,7 @@
        </layout>
       </widget>
       <widget class="QWidget" name="scanKeyImagesQrPage">
-       <layout class="QHBoxLayout" name="verticalLayout_2">
+       <layout class="QHBoxLayout" name="verticalLayout_7">
         <item>
          <widget class="QLabel" name="scanImageLabel_2">
           <property name="minimumSize">
@@ -442,43 +442,50 @@
        </layout>
       </widget>
       <widget class="QWidget" name="sendXmrPage">
-       <layout class="QVBoxLayout" name="verticalLayout_6">
+       <layout class="QHBoxLayout" name="sendXmrHorizontalLayout">
         <item>
-         <spacer name="verticalSpacer">
+         <spacer name="horizontalSpacer_8">
           <property name="orientation">
-           <enum>Qt::Vertical</enum>
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Minimum</enum>
           </property>
           <property name="sizeHint" stdset="0">
            <size>
-            <width>20</width>
-            <height>40</height>
+            <width>40</width>
+            <height>20</height>
            </size>
           </property>
          </spacer>
         </item>
         <item>
-         <layout class="QHBoxLayout" name="addressLayout">
-          <property name="spacing">
-           <number>0</number>
-          </property>
-          <property name="leftMargin">
-           <number>5</number>
-          </property>
-          <property name="rightMargin">
-           <number>5</number>
-          </property>
+         <layout class="QVBoxLayout" name="verticalLayout_6">
+          <item>
+           <spacer name="verticalSpacer">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
           <item>
            <widget class="QAddressLineEdit" name="addressLineEdit">
             <property name="styleSheet">
              <string notr="true">QLineEdit {
-							      background-color: white;
-							      color: black;
-							      font-size: 36px;
-							      border-radius: 35px;
-							      padding: 5px;
-							      min-height: 60px;
-							      max-height: 60px;
-								      }</string>
+				background-color: white;
+				color: black;
+				font-size: 36px;
+				border-radius: 35px;
+				padding: 5px;
+				min-height: 60px;
+				max-height: 60px;
+					}</string>
             </property>
             <property name="placeholderText">
              <string>Insert reception address</string>
@@ -486,147 +493,66 @@
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="scanQRButton">
-            <property name="styleSheet">
-             <string notr="true">QPushButton {
-							      background: transparent;
-							      border-radius: 32px;
-								      }</string>
+           <spacer name="verticalSpacer_5">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
             </property>
-            <property name="text">
-             <string/>
+            <property name="sizeType">
+             <enum>QSizePolicy::Minimum</enum>
             </property>
-            <property name="icon">
-             <iconset resource="icons.qrc">
-              <normaloff>:/icons/icons/Camera.svg</normaloff>:/icons/icons/Camera.svg</iconset>
-            </property>
-            <property name="iconSize">
+            <property name="sizeHint" stdset="0">
              <size>
-              <width>48</width>
-              <height>48</height>
+              <width>20</width>
+              <height>40</height>
              </size>
             </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="pasteButton">
-            <property name="styleSheet">
-             <string notr="true">QPushButton {
-							      background: transparent;
-							      border-radius: 32px;
-								      }</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="icon">
-             <iconset resource="icons.qrc">
-              <normaloff>:/icons/icons/Past.svg</normaloff>:/icons/icons/Past.svg</iconset>
-            </property>
-            <property name="iconSize">
-             <size>
-              <width>48</width>
-              <height>48</height>
-             </size>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="addressBookButton">
-            <property name="styleSheet">
-             <string notr="true">QPushButton {
-							      background: transparent;
-							      border-radius: 32px;
-								      }</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="icon">
-             <iconset resource="icons.qrc">
-              <normaloff>:/icons/icons/Répertoire.svg</normaloff>:/icons/icons/Répertoire.svg</iconset>
-            </property>
-            <property name="iconSize">
-             <size>
-              <width>48</width>
-              <height>48</height>
-             </size>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <spacer name="verticalSpacer_5">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeType">
-           <enum>QSizePolicy::Minimum</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item>
-         <layout class="QHBoxLayout" name="amountLayout">
-          <property name="spacing">
-           <number>0</number>
-          </property>
-          <property name="leftMargin">
-           <number>5</number>
-          </property>
-          <property name="rightMargin">
-           <number>5</number>
-          </property>
-          <item>
-           <widget class="QLabel" name="xmrLabel">
-            <property name="styleSheet">
-             <string notr="true">QLabel {
-background-color: transparent;
-z-index: 2;
-color: black;
-font-weight: bold;
-}</string>
-            </property>
-            <property name="text">
-             <string>XMR</string>
-            </property>
-           </widget>
+           </spacer>
           </item>
           <item>
            <widget class="QAmountLineEdit" name="amountLineEdit">
             <property name="styleSheet">
              <string notr="true">QLineEdit {
-							      background-color: white;
-							      color: black;
-							      font-size: 36px;
-							      border-radius: 35px;
-							      padding: 5px;
-							      min-height: 60px;
-							      max-height: 60px;
-								      }</string>
+				background-color: white;
+				color: black;
+				font-size: 36px;
+				border-radius: 35px;
+				padding: 5px;
+				min-height: 60px;
+				max-height: 60px;
+					}</string>
             </property>
             <property name="placeholderText">
              <string>0.00</string>
             </property>
            </widget>
           </item>
+          <item>
+           <spacer name="verticalSpacer_4">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
          </layout>
         </item>
         <item>
-         <spacer name="verticalSpacer_4">
+         <spacer name="horizontalSpacer_9">
           <property name="orientation">
-           <enum>Qt::Vertical</enum>
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Minimum</enum>
           </property>
           <property name="sizeHint" stdset="0">
            <size>
-            <width>20</width>
-            <height>40</height>
+            <width>40</width>
+            <height>20</height>
            </size>
           </property>
          </spacer>
@@ -634,7 +560,7 @@ font-weight: bold;
        </layout>
       </widget>
       <widget class="QWidget" name="unsignedTransactionQrPage">
-       <layout class="QHBoxLayout" name="verticalLayout_7">
+       <layout class="QHBoxLayout" name="verticalLayout_8">
         <item>
          <widget class="QLabel" name="scanImageLabel_3">
           <property name="minimumSize">
@@ -708,7 +634,7 @@ font-weight: bold;
        </layout>
       </widget>
       <widget class="QWidget" name="scanSignedTransactionQrPage">
-       <layout class="QHBoxLayout" name="verticalLayout_8">
+       <layout class="QHBoxLayout" name="verticalLayout_9">
         <item>
          <widget class="QLabel" name="scanImageLabel_4">
           <property name="minimumSize">

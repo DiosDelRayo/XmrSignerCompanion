@@ -21,6 +21,10 @@ set(PROJECT_SOURCES
         mainwindow.ui
         qdotprogressindicator.h
         qdotprogressindicator.cpp
+        qaddresslineedit.h
+        qaddresslineedit.cpp
+        qamountlineedit.h
+        qamountlineedit.cpp
         ${TS_FILES}
 )
 
@@ -29,14 +33,9 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
         qdotprogressindicator.h qdotprogressindicator.cpp
-        icons.qrc
         qaddresslineedit.h qaddresslineedit.cpp
-        qamountlineedit.h qamountlineedit.cpp
+        icons.qrc
     )
-# Define target properties for Android with Qt 6 as:
-#    set_property(TARGET XmrSigner APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
-#                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
-# For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
 
     qt_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 else()
@@ -56,6 +55,7 @@ else()
 endif()
 
 target_link_libraries(XmrSigner PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an

@@ -9,22 +9,30 @@ QAddressLineEdit::QAddressLineEdit(QWidget *parent): QLineEdit(parent) {
 
     QHBoxLayout *layout = new QHBoxLayout(this);
     layout->setContentsMargins(0, 0, 10, 0);
-    layout->setSpacing(5);
+    layout->setSpacing(10);
     layout->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
-    scanButton = new QPushButton(this);
-    pasteButton = new QPushButton(this);
-    addressBookButton = new QPushButton(this);
+    QFrame *frame = new QFrame(this);
+    QHBoxLayout *frameLayout = new QHBoxLayout(frame);
+    frameLayout->setContentsMargins(0, 0, 10, 0);
+    frameLayout->setSpacing(0);
+    frameLayout->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    frame->setStyleSheet("QFrame { background: green; border: none; border-radius: 32px; }");
+    frame->setFixedHeight(70);
+    scanButton = new QPushButton(frame);
+    pasteButton = new QPushButton(frame);
+    addressBookButton = new QPushButton(frame);
 
     for (QPushButton *button : {scanButton, pasteButton, addressBookButton}) {
-        button->setFixedSize(40, 40);
-        button->setStyleSheet("QPushButton { background: transparent; border: none; }");
+        button->setFixedSize(64, 64);
+        button->setStyleSheet("QPushButton { background: transparent; border: none; border-radius: 32px; }");
+        button->setIconSize(QSize(48, 48));
         layout->addWidget(button);
     }
 
     scanButton->setIcon(QIcon(":/icons/icons/Camera.svg"));
     pasteButton->setIcon(QIcon(":/icons/icons/Past.svg"));
-    addressBookButton->setIcon(QIcon(":/icons/icons/Répertoire.svg"));
+    addressBookButton->setIcon(QIcon(":/icons/icons/Bookmarks.svg"));
 
     setTextMargins(10, 0, 135, 0);
 }

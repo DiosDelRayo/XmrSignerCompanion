@@ -12,7 +12,7 @@
         <file>icons/Next.svg</file>
         <file>icons/Past.svg</file>
         <file>icons/Previous.svg</file>
-        <file>icons/Répertoire.svg</file>
         <file>icons/Valid.svg</file>
+        <file>icons/Bookmarks.svg</file>
     </qresource>
 </RCC>
