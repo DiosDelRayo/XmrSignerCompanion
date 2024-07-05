@@ -2,8 +2,19 @@
 #include <QLineEdit>
 #include <QPushButton>
 #include <QHBoxLayout>
+#include <QApplication>
+#include <QClipboard>
+#include <QRegularExpression>
+#include <QRegularExpressionMatch>
+#include <QDebug>
+
 
 QAddressLineEdit::QAddressLineEdit(QWidget *parent): QLineEdit(parent) {
+    QMap<QString, QStringList> moneroRegex = {
+                                              {"mainnet", {"^4[0-9AB][0-9A-HJ-NP-Z]{93}$", "^8[0-9A-HJ-NP-Z]{95}$"}},
+        {"testnet", {"^5[0-9A-HJ-NP-Z]{94}$", "^9[0-9A-HJ-NP-Z]{95}$"}},
+        {"stagenet", {"^5[0-9A-HJ-NP-Z]{94}$", "^A[0-9A-HJ-NP-Z]{95}$"}}
+    };
     setPlaceholderText("Insert reception address");
     setStyleSheet("QLineEdit { background-color: white; color: black; font-size: 18px; border-radius: 25px; padding: 5px 15px; min-height: 50px; }");
 
@@ -38,6 +49,21 @@ QAddressLineEdit::QAddressLineEdit(QWidget *parent): QLineEdit(parent) {
     connect(scanButton, &QPushButton::clicked, this, &QAddressLineEdit::scanClicked);
     connect(pasteButton, &QPushButton::clicked, this, &QAddressLineEdit::pasteClicked);
     connect(addressBookButton, &QPushButton::clicked, this, &QAddressLineEdit::addressBookClicked);
+    connect(pasteButton, &QPushButton::clicked, [this, moneroRegex](){
+
+        QClipboard *clipboard = QGuiApplication::clipboard();
+        QString clipboardText = clipboard->text();
+
+        for(const QString& pattern : moneroRegex["testnet"]) {
+            QRegularExpression regex(pattern);
+            if (regex.match(clipboardText).hasMatch()) {
+                setText(clipboardText);
+                qDebug() << "Clipboard content is a valid monero address.";
+                return;
+            }
+        }
+        qDebug() << "Clipboard content is not a valid monero address.";
+    });
 
     scanButton->setIcon(QIcon(":/icons/icons/Camera.svg"));
     pasteButton->setIcon(QIcon(":/icons/icons/Past.svg"));

@@ -5,9 +5,13 @@
 #include <QTranslator>
 #include "qaddresslineedit.h"
 #include "qamountlineedit.h"
+#include "qdotprogressindicator.h"
+#include "qrcode/scanner/QrCodeScanWidget.h"
 
 Q_DECLARE_METATYPE(QAddressLineEdit*)
 Q_DECLARE_METATYPE(QAmountLineEdit*)
+Q_DECLARE_METATYPE(QDotProgressIndicator*)
+Q_DECLARE_METATYPE(QrCodeScanWidget*)
 
 int main(int argc, char *argv[])
 {

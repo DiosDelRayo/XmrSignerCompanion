@@ -6,7 +6,6 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent) //, Qt::FramelessWindowHint)
     , ui(new Ui::MainWindow)
-    , m_dotIndicator(new QDotProgressIndicator(this))
 {
     //setAttribute(Qt::WA_TranslucentBackground);
     ui->setupUi(this);
@@ -14,39 +13,9 @@ MainWindow::MainWindow(QWidget *parent)
     ui->stackedWidget->setCurrentIndex(0);
     this->syncDotIndicator(0);
 
-    m_dotIndicator->setTotalSteps(ui->stackedWidget->count());  // Set the total number of steps
-    m_dotIndicator->setCurrentStep(0);  // Set initial step
-    m_dotIndicator->setFixedSize(200, 20);  // Adjust size as needed
-
-    if (ui->dotProgressIndicatorFrame) {
-        QWidget* parent = ui->dotProgressIndicatorFrame->parentWidget();
-        QLayout* parentLayout = parent->layout();
-
-        if (parentLayout) {
-            // Remove the existing widget from the layout
-            parentLayout->removeWidget(ui->dotProgressIndicatorFrame);
-            parentLayout->removeWidget(ui->nextButton);
-
-            // Add the new dot indicator to the layout
-            parentLayout->addWidget(m_dotIndicator);
-            parentLayout->addWidget(ui->nextButton);
-
-            // Set the same size policy as the original widget
-            m_dotIndicator->setSizePolicy(ui->dotProgressIndicatorFrame->sizePolicy());
-
-            // Hide and schedule for deletion the original widget
-            ui->dotProgressIndicatorFrame->hide();
-            ui->dotProgressIndicatorFrame->deleteLater();
-        } else {
-            // If there's no layout, simply add the new widget to the parent
-            m_dotIndicator->setParent(parent);
-            m_dotIndicator->move(ui->dotProgressIndicatorFrame->pos());
-            m_dotIndicator->show();
-
-            ui->dotProgressIndicatorFrame->hide();
-            ui->dotProgressIndicatorFrame->deleteLater();
-        }
-    }
+    ui->dotIndicator->setTotalSteps(ui->stackedWidget->count());  // Set the total number of steps
+    ui->dotIndicator->setCurrentStep(0);  // Set initial step
+    ui->dotIndicator->setFixedSize(200, 20);  // Adjust size as needed
 
     connect(ui->nextButton, &QPushButton::clicked, this, [this]() {
         // Check logic before advancing to next step
@@ -54,7 +23,7 @@ MainWindow::MainWindow(QWidget *parent)
             int currentIndex = ui->stackedWidget->currentIndex();
             int nextIndex = (currentIndex + 1) % ui->stackedWidget->count(); // Loop back to the first widget if at the last
             ui->stackedWidget->setCurrentIndex(nextIndex);
-            m_dotIndicator->setCurrentStep(nextIndex); // Sync QDotProgressIndicator
+            ui->dotIndicator->setCurrentStep(nextIndex); // Sync QDotProgressIndicator
         }
     });
 
@@ -64,18 +33,18 @@ MainWindow::MainWindow(QWidget *parent)
             int currentIndex = ui->stackedWidget->currentIndex();
             int prevIndex = (ui->stackedWidget->count() + currentIndex - 1) % ui->stackedWidget->count(); // Loop to last widget if at the first
             ui->stackedWidget->setCurrentIndex(prevIndex);
-            m_dotIndicator->setCurrentStep(prevIndex); // Sync QDotProgressIndicator
+            ui->dotIndicator->setCurrentStep(prevIndex); // Sync QDotProgressIndicator
         }
     });
 
     connect(ui->stackedWidget, &QStackedWidget::currentChanged, this, &MainWindow::syncDotIndicator);
 
-    qDebug() << "Dot Indicator size:" << m_dotIndicator->size();
-    qDebug() << "Dot Indicator is visible:" << m_dotIndicator->isVisible();
+    qDebug() << "Dot Indicator size:" << ui->dotIndicator->size();
+    qDebug() << "Dot Indicator is visible:" << ui->dotIndicator->isVisible();
 }
 
 void MainWindow::syncDotIndicator(int index) {
-    m_dotIndicator->setCurrentStep(index);
+    ui->dotIndicator->setCurrentStep(index);
     switch (index) {
     case 0:
         ui->titleLabel->setText(QString("Import View Only Wallet"));

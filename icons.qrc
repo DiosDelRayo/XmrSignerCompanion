@@ -3,6 +3,8 @@
         <file>images/logo_black_240.png</file>
         <file>images/logo_black_188.png</file>
         <file>images/qr.png</file>
+        <file>images/XmrSignerCompanion.png</file>
+        <file>images/XmrSignerBG.png</file>
     </qresource>
     <qresource prefix="/icons">
         <file>icons/Cam qr.svg</file>

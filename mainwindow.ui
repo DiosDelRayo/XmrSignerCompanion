@@ -17,6 +17,18 @@
    <iconset resource="icons.qrc">
     <normaloff>:/images/logo_black_188.png</normaloff>:/images/logo_black_188.png</iconset>
   </property>
+  <property name="styleSheet">
+   <string notr="true">QMainWindow {
+background-image: url(://images/XmrSignerBG.png);
+background-position: top right;
+background-repeat: no-repeat;
+background-size: 64px 64px;
+padding-bottom: 10px;
+padding-left: 10px;
+background-clip: content;
+background-origin: content;
+}</string>
+  </property>
   <widget class="QWidget" name="centralwidget">
    <property name="baseSize">
     <size>
@@ -962,18 +974,12 @@
         </widget>
        </item>
        <item alignment="Qt::AlignHCenter">
-        <widget class="QFrame" name="dotProgressIndicatorFrame">
+        <widget class="QDotProgressIndicator" name="dotIndicator" native="true">
          <property name="minimumSize">
           <size>
            <width>0</width>
            <height>20</height>
           </size>
-         </property>
-         <property name="frameShape">
-          <enum>QFrame::StyledPanel</enum>
-         </property>
-         <property name="frameShadow">
-          <enum>QFrame::Raised</enum>
          </property>
         </widget>
        </item>
@@ -1044,6 +1050,12 @@
    <class>QAmountLineEdit</class>
    <extends>QLineEdit</extends>
    <header>qamountlineedit.h</header>
+  </customwidget>
+  <customwidget>
+   <class>QDotProgressIndicator</class>
+   <extends>QWidget</extends>
+   <header>qdotprogressindicator.h</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources>

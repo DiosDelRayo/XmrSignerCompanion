@@ -9,8 +9,8 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools Network Multimedia MultimediaWidgets Svg SvgWidgets)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools Network Multimedia MultimediaWidgets Svg SvgWidgets)
 
 set(TS_FILES XmrSigner_en_US.ts)
 
@@ -25,6 +25,9 @@ set(PROJECT_SOURCES
         qaddresslineedit.cpp
         qamountlineedit.h
         qamountlineedit.cpp
+        qrcode/scanner/QrCodeScanWidget.h
+        qrcode/scanner/QrCodeScanWidget.cpp
+        qrcode/scanner/QrCodeScanWidget.ui
         ${TS_FILES}
 )
 
@@ -34,6 +37,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         ${PROJECT_SOURCES}
         qdotprogressindicator.h qdotprogressindicator.cpp
         qaddresslineedit.h qaddresslineedit.cpp
+        qamountlineedit.h qamountlineedit.cpp
         icons.qrc
     )
 
@@ -54,14 +58,36 @@ else()
     qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 endif()
 
-target_link_libraries(XmrSigner PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(XmrSigner PRIVATE
+    Qt${QT_VERSION_MAJOR}::Widgets
+    Qt${QT_VERSION_MAJOR}::Network
+    Qt${QT_VERSION_MAJOR}::Multimedia
+    Qt${QT_VERSION_MAJOR}::MultimediaWidgets
+    Qt${QT_VERSION_MAJOR}::Svg
+    Qt${QT_VERSION_MAJOR}::SvgWidgets
+    ${ZXING_LIBRARIES}
+    ${QRENCODE_LIBRARY}
+)
+
+target_include_directories(
+    ${PROJECT_NAME}
+    PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${QtMultimedia_INCLUDE_DIRS}
+    ${QtMultimediaWidgets_INCLUDE_DIRS}
+    ${ZXING_INCLUDE_DIRS}
+)
+
+target_compile_definitions(XmrSigner PUBLIC
+        ${QtMultimedia_DEFINITIONS}
+        ${QtMultimediaWidgets_DEFINITIONS}
+)
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an
 # explicit, fixed bundle identifier manually though.
 if(${QT_VERSION} VERSION_LESS 6.1.0)
-  set(BUNDLE_ID_OPTION MACOSX_BUNDLE_GUI_IDENTIFIER com.example.XmrSigner)
+  set(BUNDLE_ID_OPTION MACOSX_BUNDLE_GUI_IDENTIFIER com.xmrsigner.XmrSigner)
 endif()
 set_target_properties(XmrSigner PROPERTIES
     ${BUNDLE_ID_OPTION}

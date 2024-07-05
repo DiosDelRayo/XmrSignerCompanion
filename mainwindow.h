@@ -2,7 +2,6 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include "qdotprogressindicator.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -24,6 +23,5 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
-    QDotProgressIndicator* m_dotIndicator;
 };
 #endif // MAINWINDOW_H
