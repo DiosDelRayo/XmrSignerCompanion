@@ -1,7 +1,7 @@
 #include "qamountlineedit.h"
 #include <QHBoxLayout>
 
-QAmountLineEdit::QAmountLineEdit(QWidget *parent) : QLineEdit(parent) {
+QAmountLineEdit::QAmountLineEdit(QWidget *parent) : QLineEdit(parent){
     setStyleSheet("QLineEdit { background-color: white; color: black; font-size: 18px; border-radius: 25px; padding: 5px 15px; min-height: 50px; }");
     setPlaceholderText("0.00");
 
