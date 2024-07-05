@@ -4,7 +4,7 @@
 QDotProgressIndicator::QDotProgressIndicator(QWidget *parent)
     : QWidget(parent), m_totalSteps(10), m_currentStep(0)
 {
-    setFixedHeight(40); // Adjust as needed
+    setFixedHeight(48);
 }
 
 void QDotProgressIndicator::setTotalSteps(int steps)
