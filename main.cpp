@@ -3,6 +3,11 @@
 #include <QApplication>
 #include <QLocale>
 #include <QTranslator>
+#include "qaddresslineedit.h"
+#include "qamountlineedit.h"
+
+Q_DECLARE_METATYPE(QAddressLineEdit*)
+Q_DECLARE_METATYPE(QAmountLineEdit*)
 
 int main(int argc, char *argv[])
 {

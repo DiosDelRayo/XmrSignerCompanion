@@ -468,7 +468,7 @@
            <number>5</number>
           </property>
           <item>
-           <widget class="QLineEdit" name="addressLineEdit">
+           <widget class="QAddressLineEdit" name="addressLineEdit">
             <property name="styleSheet">
              <string notr="true">QLineEdit {
 							      background-color: white;
@@ -599,7 +599,7 @@ font-weight: bold;
            </widget>
           </item>
           <item>
-           <widget class="QLineEdit" name="amountLineEdit">
+           <widget class="QAmountLineEdit" name="amountLineEdit">
             <property name="styleSheet">
              <string notr="true">QLineEdit {
 							      background-color: white;
@@ -911,6 +911,18 @@ font-weight: bold;
    </layout>
   </widget>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QAddressLineEdit</class>
+   <extends>QLineEdit</extends>
+   <header>qaddresslineedit.h</header>
+  </customwidget>
+  <customwidget>
+   <class>QAmountLineEdit</class>
+   <extends>QLineEdit</extends>
+   <header>qamountlineedit.h</header>
+  </customwidget>
+ </customwidgets>
  <resources>
   <include location="icons.qrc"/>
  </resources>
