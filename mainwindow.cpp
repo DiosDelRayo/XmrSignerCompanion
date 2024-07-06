@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "qrcode/scanner/QrCodeScanWidget.h"
 #include "./ui_mainwindow.h"
 #include <QVBoxLayout>
 #include <QDebug>

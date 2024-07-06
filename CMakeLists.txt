@@ -11,12 +11,15 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools Network Multimedia MultimediaWidgets Svg SvgWidgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools Network Multimedia MultimediaWidgets Svg SvgWidgets)
+find_package(ZXing REQUIRED)
 
 set(TS_FILES XmrSigner_en_US.ts)
 
 set(PROJECT_SOURCES
         main.cpp
         mainwindow.cpp
+	components.h
+	components.cpp
         mainwindow.h
         mainwindow.ui
         qdotprogressindicator.h
@@ -28,8 +31,14 @@ set(PROJECT_SOURCES
         qrcode/scanner/QrCodeScanWidget.h
         qrcode/scanner/QrCodeScanWidget.cpp
         qrcode/scanner/QrCodeScanWidget.ui
+        qrcode/scanner/QrScanThread.h
+        qrcode/scanner/QrScanThread.cpp
+        bcur/ur-decoder.cpp
+        bcur/ur-decoder.hpp
         ${TS_FILES}
 )
+
+add_definitions(-DZX_USE_UTF8)
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(XmrSigner
@@ -65,14 +74,16 @@ target_link_libraries(XmrSigner PRIVATE
     Qt${QT_VERSION_MAJOR}::MultimediaWidgets
     Qt${QT_VERSION_MAJOR}::Svg
     Qt${QT_VERSION_MAJOR}::SvgWidgets
-    ${ZXING_LIBRARIES}
-    ${QRENCODE_LIBRARY}
+    ZXing::ZXing
 )
 
 target_include_directories(
     ${PROJECT_NAME}
     PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/qrcode
+    ${CMAKE_CURRENT_SOURCE_DIR}/qrcode/scanner
+    ${CMAKE_CURRENT_SOURCE_DIR}/bcur
     ${QtMultimedia_INCLUDE_DIRS}
     ${QtMultimediaWidgets_INCLUDE_DIRS}
     ${ZXING_INCLUDE_DIRS}

@@ -69,12 +69,12 @@ background-origin: content;
     <item>
      <widget class="QStackedWidget" name="stackedWidget">
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="scanViewWalletQrPage">
        <layout class="QHBoxLayout" name="verticalLayout_2">
         <item>
-         <widget class="QLabel" name="scanImageLabel">
+         <widget class="QrCodeScanWidget" name="scanViewWallet" native="true">
           <property name="minimumSize">
            <size>
             <width>200</width>
@@ -91,17 +91,14 @@ background-origin: content;
 											padding: 20px;
 												}</string>
           </property>
-          <property name="text">
+          <property name="text" stdset="0">
            <string/>
           </property>
-          <property name="pixmap">
+          <property name="pixmap" stdset="0">
            <pixmap resource="icons.qrc">:/icons/icons/Cam qr.svg</pixmap>
           </property>
-          <property name="scaledContents">
+          <property name="scaledContents" stdset="0">
            <bool>false</bool>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignCenter</set>
           </property>
          </widget>
         </item>
@@ -1055,6 +1052,12 @@ background-origin: content;
    <class>QDotProgressIndicator</class>
    <extends>QWidget</extends>
    <header>qdotprogressindicator.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>QrCodeScanWidget</class>
+   <extends>QWidget</extends>
+   <header>qrcode/scanner/QrCodeScanWidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
