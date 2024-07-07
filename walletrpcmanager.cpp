@@ -7,38 +7,35 @@
 #include <QDebug>
 
 QString WalletRpcManager::getExecutableDir() {
-    // Get the absolute path of the current executable
     QString executablePath = QCoreApplication::applicationFilePath();
-
-    // Extract the directory part of the executable path
-    QDir executableDir(executablePath);
-    return executableDir.absolutePath();
+    QFileInfo executableInfo(executablePath);
+    QString executableDir = executableInfo.absolutePath();
+    qDebug() << "executable dir: " << executableDir;
+    
+    return executableDir;
 }
 
 QString WalletRpcManager::findShippedWalletRpc(const QString &executableName) {
-    QString currentDir = getExecutableDir();
-
-    QDir dir(currentDir);
-    QStringList files = dir.entryList(QStringList(executableName), QDir::Files);
-
-    if (!files.isEmpty()) {
-        QString executablePath = QDir::toNativeSeparators(dir.absoluteFilePath(files.first()));
-        return executablePath;
-    }
-
-    return QString();
+    QString filePath = QDir(getExecutableDir()).filePath(executableName);
+    QFile file = QFile(filePath);
+    qDebug() << "shipped wallet rpc: " << filePath;
+    if (file.exists())
+        return filePath;
+    return nullptr;
 }
 
 WalletRpcManager::WalletRpcManager(
     QObject *parent,
     const QString& walletRpcPath,
+    const QString& walletDirPath,
     const QString& network,
     int rpcPort)
     : QObject(parent)
     , m_walletRPCProcess(new QProcess(this))
-    , m_walletRPCPath(walletRpcPath)  // Set this to the actual path
+    , m_walletRPCPath(walletRpcPath)
+    , m_walletDirPath(walletDirPath)
     , m_network(network.toLower())
-    , m_rpcPort(rpcPort)  // Default Monero RPC port, adjust if needed
+    , m_rpcPort(rpcPort)
     , m_networkManager(new QNetworkAccessManager(this))
 {
     setupProcess();
@@ -65,7 +62,7 @@ bool WalletRpcManager::startWalletRPC()
     QStringList arguments;
     arguments << "--rpc-bind-port" << QString::number(m_rpcPort);
     arguments << "--rpc-login" << "wallet:wallet";
-    arguments << "--wallet-dir" << "/tmp";
+    arguments << "--wallet-dir" << m_walletDirPath;
     if (m_network == "testnet") {
         arguments << "--testnet";
     } else if (m_network == "stagenet") {

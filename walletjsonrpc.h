@@ -51,9 +51,12 @@ public:
 
     QJsonObject rescanSpent();
 
-    QJsonObject generateViewOnlyWallet(unsigned int restore_height, const QString &filename, const QString &address,
-                                       const QString &spendkey, const QString &viewkey, const QString &password,
-                                       bool autosave_current = true);
+    QJsonObject loadWallet(
+        unsigned int restore_height,
+        const QString &filename,
+        const QString &address,
+        const QString &viewkey
+        );
 
     QJsonObject closeWallet();
 
@@ -66,7 +69,7 @@ private:
     QString m_host;
     int m_port;
     bool m_tls;
-    QNetworkAccessManager m_networkManager;
+    QNetworkAccessManager* m_networkManager;
     QUrl m_url;
     QString m_username;
     QString m_password;

@@ -4,6 +4,7 @@
 #include <QMap>
 #include <QString>
 #include <QMainWindow>
+#include <QTemporaryDir>
 #include "walletrpcmanager.h"
 #include "walletjsonrpc.h"
 #include "qrcode/scanner/QrCodeScanWidget.h"
@@ -20,13 +21,26 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+protected:
+    void closeEvent(QCloseEvent *event) override;
+
 private:
     bool checkLogic();
     QString primaryAddress = nullptr;
     QString privateViewKey = nullptr;
+    QTemporaryDir *tempDir = nullptr;
     int restoreHeight = 0;
     WalletRpcManager *walletRpcManager = nullptr;
     WalletJsonRpc *walletRpc = nullptr;
+    void checkWalletRpcConnection(int attempts = 10, int delayBetweenAttempts = 500);
+    void loadWallet();
+    bool isViewOnlyWallet(const QString& qrCode);
+    void removeQrCodeScanWidgetFromUi(QrCodeScanWidget *&widget);
+    QString getWalletFile();
+    QString getWalletDirectory();
+    QString getWalletPath();
+    void removeWalletFiles();
+    Ui::MainWindow *ui;
 
     const QMap<QChar, QString> NETWORK = {
         {'4', "mainnet"},
@@ -43,14 +57,25 @@ private:
     QString network = NETWORK['4'];
     int monerodPort = 0;
 
+signals:
+    void walletRpcConnected();
+    void walletRpcConnectionFailed();
+    void waitForWalletRpcConnection(int microsecondsLeft);
+    void walletLoaded();
+    void walletError();
+    void shutdownRequested();
+
 private slots:
     void syncDotIndicator(int index);
-    void viewWalletScanFinished(bool successful);
-    void removeQrCodeScanWidgetFromUi(QrCodeScanWidget *&widget);
-    bool isViewOnlyWallet(const QString& qrCode);
-    void walletRpcStarted();
-
-private:
-    Ui::MainWindow *ui;
+    void onViewWalletScanFinished(bool successful);
+    void onWalletRpcStarted();
+    void onWalletRpcStopped();
+    void onWalletRpcError();
+    void onWalletRpcReady();
+    void awaitWalletRpcForMax(int microseconds);
+    void onWalletRpcFailed();
+    void onWalletLoaded();
+    void onWalletError();
+    void onShutdown();
 };
 #endif // MAINWINDOW_H

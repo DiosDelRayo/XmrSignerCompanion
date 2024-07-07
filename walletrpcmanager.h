@@ -15,6 +15,7 @@ public:
     explicit WalletRpcManager(
         QObject *parent = nullptr,
         const QString& walletRpcPath = nullptr,
+        const QString& walletDirPath = nullptr,
         const QString& network = "mainnet",
         int rpcPort = 18082
         );
@@ -42,6 +43,7 @@ private:
 
     QProcess *m_walletRPCProcess;
     QString m_walletRPCPath;
+    QString m_walletDirPath;
     QString m_network;
     int m_rpcPort;
     QNetworkAccessManager *m_networkManager;
