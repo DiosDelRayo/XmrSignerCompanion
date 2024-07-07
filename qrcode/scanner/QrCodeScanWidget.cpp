@@ -10,10 +10,11 @@
 #include <QDebug>
 
 QrCodeScanWidget::QrCodeScanWidget(QWidget *parent)
-        : QWidget(parent)
-        , ui(new Ui::QrCodeScanWidget)
-        , m_sink(new QVideoSink(this))
-        , m_thread(new QrScanThread(this))
+    : QWidget(parent)
+    , ui(new Ui::QrCodeScanWidget)
+    , m_sink(new QVideoSink(this))
+    , m_thread(new QrScanThread(this))
+    , m_progressFrame(new ProgressFrame(this))
 {
     ui->setupUi(this);
     
@@ -21,6 +22,9 @@ QrCodeScanWidget::QrCodeScanWidget(QWidget *parent)
     
     ui->frame_error->hide();
     ui->frame_error->setInfo(QIcon(":/icons/icons/warning.png"), "Lost connection to camera");
+
+    ui->layout_progress->addWidget(m_progressFrame);
+    m_progressFrame->setState(ProgressFrame::State::Idle);
 
     this->refreshCameraList();
     
@@ -67,6 +71,8 @@ void QrCodeScanWidget::startCapture(bool scan_ur) {
     m_scan_ur = scan_ur;
     ui->progressBar_UR->setVisible(m_scan_ur);
     ui->progressBar_UR->setFormat("Progress: %v%");
+
+    m_progressFrame->setState(ProgressFrame::State::Idle);
 
     QCameraPermission cameraPermission;
     switch (qApp->checkPermission(cameraPermission)) {
@@ -134,6 +140,8 @@ void QrCodeScanWidget::handleFrameCaptured(const QVideoFrame &frame) {
     if (!m_thread->isRunning()) {
         return;
     }
+
+    m_progressFrame->setState(ProgressFrame::State::Recognized);
 
     QImage img = this->videoFrameToImage(frame);
     if (img.format() == QImage::Format_ARGB32) {
@@ -223,6 +231,8 @@ void QrCodeScanWidget::onDecoded(const QString &data) {
           return;
         }
 
+        m_progressFrame->setState(ProgressFrame::State::Validated);
+
         ui->progressBar_UR->setValue(m_decoder.estimated_percent_complete() * 100);
         ui->progressBar_UR->setMaximum(100);
 
@@ -238,6 +248,9 @@ void QrCodeScanWidget::onDecoded(const QString &data) {
     decodedString = data;
     m_done = true;
     m_thread->stop();
+
+    m_progressFrame->setState(ProgressFrame::State::Processing);
+
     emit finished(true);
 }
 

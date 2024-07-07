@@ -15,6 +15,7 @@
 
 #include <../bcur/bc-ur.hpp>
 #include <../bcur/ur-decoder.hpp>
+#include "progressframe.h"
 
 namespace Ui {
     class QrCodeScanWidget;
@@ -60,6 +61,7 @@ private:
     ur::URDecoder m_decoder;
     bool m_done = false;
     bool m_handleFrames = true;
+    ProgressFrame *m_progressFrame;
 };
 
 #endif //FEATHER_QRCODESCANWIDGET_H
