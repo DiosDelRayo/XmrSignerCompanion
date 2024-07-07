@@ -71,6 +71,136 @@ QrCodeScanWidget::QrCodeScanWidget(QWidget *parent)
     ui->slider_exposure->setVisible(false);
 }
 
+void QrCodeScanWidget::drawProcessingAnimation(QPainter &painter, const QRect &rect)
+{
+    int totalLength = (rect.width() + rect.height()) * 2;
+    int currentLength = totalLength - (m_animationProgress * totalLength / 100);
+
+    if (currentLength == 0) {
+        return;  // Animation completed, nothing to draw
+    }
+
+    int startSide = (m_animationProgress * 4) / 100;  // 0: top, 1: right, 2: bottom, 3: left
+    QPoint start;
+
+    switch (startSide) {
+        case 0: start = QPoint(rect.right(), rect.top()); break;
+        case 1: start = QPoint(rect.right(), rect.bottom()); break;
+        case 2: start = QPoint(rect.left(), rect.bottom()); break;
+        case 3: start = QPoint(rect.left(), rect.top()); break;
+    }
+
+    QPoint end = start;
+    int remainingLength = currentLength;
+
+    for (int side = 0; side < 4; ++side) {
+        int currentSide = (startSide + side) % 4;
+        int sideLength;
+
+        switch (currentSide) {
+            case 0: // top
+            case 2: // bottom
+                sideLength = rect.width();
+                break;
+            case 1: // right
+            case 3: // left
+                sideLength = rect.height();
+                break;
+        }
+
+        if (remainingLength > sideLength) {
+            switch (currentSide) {
+                case 0: end.setX(rect.left()); break;
+                case 1: end.setY(rect.top()); break;
+                case 2: end.setX(rect.right()); break;
+                case 3: end.setY(rect.bottom()); break;
+            }
+            painter.drawLine(start, end);
+            start = end;
+            remainingLength -= sideLength;
+        } else {
+            switch (currentSide) {
+                case 0: end.setX(start.x() - remainingLength); break;
+                case 1: end.setY(start.y() - remainingLength); break;
+                case 2: end.setX(start.x() + remainingLength); break;
+                case 3: end.setY(start.y() + remainingLength); break;
+            }
+            painter.drawLine(start, end);
+            break;
+        }
+    }
+}
+
+void QrCodeScanWidget::animateProcessing()
+{
+    m_animationProgress += 1;
+    if (m_animationProgress >= 100) {
+        m_animationProgress = 0;
+    }
+    update();
+}
+
+void QrCodeScanWidget::onFrameStateIdle() {
+    updateFrameState(FrameState::Idle);
+}
+
+void QrCodeScanWidget::onFrameStateRecognized() {
+    updateFrameState(FrameState::Recognized);
+}
+
+void QrCodeScanWidget::onFrameStateValidated() {
+    updateFrameState(FrameState::Validated);
+}
+
+void QrCodeScanWidget::onFrameStateProgress() {
+    updateFrameState(FrameState::Progress);
+}
+
+void QrCodeScanWidget::onProgressUpdate(int percent) {
+    m_progress = percent;
+}
+
+void QrCodeScanWidget::onFrameStateProcessing(){
+    updateFrameState(FrameState::Processing);
+    if(m_estimatedMicroSeconds < 5000)
+        m_estimatedMicroSeconds = 5000;
+}
+
+void QrCodeScanWidget::onProcessingTimeEstimate(int estimatedMicroSeconds) {
+    m_estimatedMicroSeconds = estimatedMicroSeconds;
+}
+
+void QrCodeScanWidget::onFrameStateProcessing(int estimatedMicroSeconds) {
+    if(m_frameState != FrameState::Processing) {
+        updateFrameState(FrameState::Processing);
+        m_estimatedMicroSeconds = estimatedMicroSeconds;
+    } else {
+        m_estimatedMicroSeconds += estimatedMicroSeconds;
+    }
+}
+
+void QrCodeScanWidget::onFrameStateProgress(int percent) {
+    if(m_frameState != FrameState::Progress)
+        updateFrameState(FrameState::Progress);
+    m_progress = percent;
+}
+
+void QrCodeScanWidget::onFrameStateError() {
+    updateFrameState(FrameState::Error);
+}
+
+void QrCodeScanWidget::updateFrameState(FrameState state)
+{
+    m_frameState = state;
+    if (state == FrameState::Processing) {
+        m_animationProgress = 0;
+        m_animationTimer.start(50);
+    } else {
+        m_animationTimer.stop();
+    }
+    update();
+}
+
 void QrCodeScanWidget::paintEvent(QPaintEvent *event)
 {
     QWidget::paintEvent(event);
@@ -103,78 +233,6 @@ void QrCodeScanWidget::paintEvent(QPaintEvent *event)
         drawProcessingAnimation(painter, frameRect);
         break;
     }
-}
-
-void QrCodeScanWidget::drawProcessingAnimation(QPainter &painter, const QRect &rect)
-{
-    int totalLength = (rect.width() + rect.height()) * 2;
-    int currentLength = totalLength - (m_animationProgress * totalLength / 100);
-
-    QPoint start(rect.left(), rect.top());
-    QPoint end = start;
-
-    // Top edge
-    if (currentLength > rect.width()) {
-        end.setX(rect.right());
-        currentLength -= rect.width();
-    } else {
-        end.setX(start.x() + currentLength);
-        painter.drawLine(start, end);
-        return;
-    }
-    painter.drawLine(start, end);
-    start = end;
-
-    // Right edge
-    if (currentLength > rect.height()) {
-        end.setY(rect.bottom());
-        currentLength -= rect.height();
-    } else {
-        end.setY(start.y() + currentLength);
-        painter.drawLine(start, end);
-        return;
-    }
-    painter.drawLine(start, end);
-    start = end;
-
-    // Bottom edge
-    if (currentLength > rect.width()) {
-        end.setX(rect.left());
-        currentLength -= rect.width();
-    } else {
-        end.setX(start.x() - currentLength);
-        painter.drawLine(start, end);
-        return;
-    }
-    painter.drawLine(start, end);
-    start = end;
-
-    // Left edge
-    if (currentLength > 0) {
-        end.setY(rect.top() + currentLength);
-        painter.drawLine(start, end);
-    }
-}
-
-void QrCodeScanWidget::animateProcessing()
-{
-    m_animationProgress += 1;
-    if (m_animationProgress >= 100) {
-        m_animationProgress = 0;
-    }
-    update();
-}
-
-void QrCodeScanWidget::updateFrameState(FrameState state)
-{
-    m_frameState = state;
-    m_animationProgress = 0;
-    if (state == FrameState::Processing) {
-        m_animationTimer.start(50);
-    } else {
-        m_animationTimer.stop();
-    }
-    update();
 }
 
 void QrCodeScanWidget::startCapture(bool scan_ur) {
@@ -250,8 +308,6 @@ void QrCodeScanWidget::handleFrameCaptured(const QVideoFrame &frame) {
     if (!m_thread->isRunning()) {
         return;
     }
-
-    //updateFrameState(FrameState::Recognized);
 
     QImage img = this->videoFrameToImage(frame);
     if (img.format() == QImage::Format_ARGB32) {
@@ -341,7 +397,6 @@ void QrCodeScanWidget::onDecoded(const QString &data) {
           return;
         }
 
-    //    updateFrameState(FrameState::Validated);
     updateFrameState(FrameState::Recognized);
 
         ui->progressBar_UR->setValue(m_decoder.estimated_percent_complete() * 100);
@@ -359,9 +414,6 @@ void QrCodeScanWidget::onDecoded(const QString &data) {
     decodedString = data;
     m_done = true;
     m_thread->stop();
-
-    updateFrameState(FrameState::Processing);
-
     emit finished(true);
 }
 

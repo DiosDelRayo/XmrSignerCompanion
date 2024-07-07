@@ -68,15 +68,31 @@ private:
         Idle,
         Recognized,
         Validated,
-        Processing
+        Processing,
+        Progress,
+        Error
     };
     FrameState m_frameState;
     QTimer m_animationTimer;
     int m_animationProgress;
+    int m_estimatedMicroSeconds = 0;
+    int m_progress = 0;
 
     void drawProcessingAnimation(QPainter &painter, const QRect &rect);
     void updateFrameState(FrameState state);
     void animateProcessing();
+
+public slots:
+    void onFrameStateIdle();
+    void onFrameStateRecognized();
+    void onFrameStateValidated();
+    void onFrameStateProcessing();
+    void onProcessingTimeEstimate(int estimatedMicroSeconds);
+    void onFrameStateProcessing(int estimatedMicroSeconds);
+    void onFrameStateProgress();
+    void onProgressUpdate(int percent);
+    void onFrameStateProgress(int percent);
+    void onFrameStateError();
 };
 
 #endif //FEATHER_QRCODESCANWIDGET_H
