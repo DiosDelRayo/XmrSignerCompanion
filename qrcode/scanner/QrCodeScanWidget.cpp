@@ -7,6 +7,7 @@
 #include <QPermission>
 #include <QMediaDevices>
 #include <QComboBox>
+#include <QPainter>
 #include <QDebug>
 
 QrCodeScanWidget::QrCodeScanWidget(QWidget *parent)
@@ -14,17 +15,20 @@ QrCodeScanWidget::QrCodeScanWidget(QWidget *parent)
     , ui(new Ui::QrCodeScanWidget)
     , m_sink(new QVideoSink(this))
     , m_thread(new QrScanThread(this))
-    , m_progressFrame(new ProgressFrame(this))
+    , m_frameState(FrameState::Idle)
+    , m_animationProgress(0)
 {
     ui->setupUi(this);
     
+    int framePadding = 5; // Adjust this value as needed
+    ui->verticalLayout->setContentsMargins(framePadding, framePadding, framePadding, framePadding);
+
     this->setWindowTitle("Scan QR code");
     
     ui->frame_error->hide();
     ui->frame_error->setInfo(QIcon(":/icons/icons/warning.png"), "Lost connection to camera");
 
-    ui->layout_progress->addWidget(m_progressFrame);
-    m_progressFrame->setState(ProgressFrame::State::Idle);
+    connect(&m_animationTimer, &QTimer::timeout, this, &QrCodeScanWidget::animateProcessing);
 
     this->refreshCameraList();
     
@@ -67,12 +71,118 @@ QrCodeScanWidget::QrCodeScanWidget(QWidget *parent)
     ui->slider_exposure->setVisible(false);
 }
 
+void QrCodeScanWidget::paintEvent(QPaintEvent *event)
+{
+    QWidget::paintEvent(event);
+
+    QPainter painter(this);
+    painter.setRenderHint(QPainter::Antialiasing);
+
+    int penWidth = 4;
+    QRect frameRect = rect().adjusted(penWidth/2, penWidth/2, -penWidth/2, -penWidth/2);
+
+    QPen pen(Qt::black, penWidth);
+    painter.setPen(pen);
+
+    switch (m_frameState) {
+    case FrameState::Idle:
+        // Don't draw anything in idle state
+        break;
+    case FrameState::Recognized:
+        painter.setBrush(QColor(255, 255, 0, 100)); // Semi-transparent yellow
+        painter.drawRect(frameRect);
+        break;
+    case FrameState::Validated:
+        painter.setBrush(QColor(0, 255, 0, 100)); // Semi-transparent green
+        painter.drawRect(frameRect);
+        break;
+    case FrameState::Processing:
+        // Draw the processing animation
+        pen.setColor(Qt::blue);
+        painter.setPen(pen);
+        drawProcessingAnimation(painter, frameRect);
+        break;
+    }
+}
+
+void QrCodeScanWidget::drawProcessingAnimation(QPainter &painter, const QRect &rect)
+{
+    int totalLength = (rect.width() + rect.height()) * 2;
+    int currentLength = totalLength - (m_animationProgress * totalLength / 100);
+
+    QPoint start(rect.left(), rect.top());
+    QPoint end = start;
+
+    // Top edge
+    if (currentLength > rect.width()) {
+        end.setX(rect.right());
+        currentLength -= rect.width();
+    } else {
+        end.setX(start.x() + currentLength);
+        painter.drawLine(start, end);
+        return;
+    }
+    painter.drawLine(start, end);
+    start = end;
+
+    // Right edge
+    if (currentLength > rect.height()) {
+        end.setY(rect.bottom());
+        currentLength -= rect.height();
+    } else {
+        end.setY(start.y() + currentLength);
+        painter.drawLine(start, end);
+        return;
+    }
+    painter.drawLine(start, end);
+    start = end;
+
+    // Bottom edge
+    if (currentLength > rect.width()) {
+        end.setX(rect.left());
+        currentLength -= rect.width();
+    } else {
+        end.setX(start.x() - currentLength);
+        painter.drawLine(start, end);
+        return;
+    }
+    painter.drawLine(start, end);
+    start = end;
+
+    // Left edge
+    if (currentLength > 0) {
+        end.setY(rect.top() + currentLength);
+        painter.drawLine(start, end);
+    }
+}
+
+void QrCodeScanWidget::animateProcessing()
+{
+    m_animationProgress += 1;
+    if (m_animationProgress >= 100) {
+        m_animationProgress = 0;
+    }
+    update();
+}
+
+void QrCodeScanWidget::updateFrameState(FrameState state)
+{
+    m_frameState = state;
+    m_animationProgress = 0;
+    if (state == FrameState::Processing) {
+        m_animationTimer.start(50);
+    } else {
+        m_animationTimer.stop();
+    }
+    update();
+}
+
 void QrCodeScanWidget::startCapture(bool scan_ur) {
     m_scan_ur = scan_ur;
     ui->progressBar_UR->setVisible(m_scan_ur);
     ui->progressBar_UR->setFormat("Progress: %v%");
 
-    m_progressFrame->setState(ProgressFrame::State::Idle);
+    updateFrameState(FrameState::Idle);
 
     QCameraPermission cameraPermission;
     switch (qApp->checkPermission(cameraPermission)) {
@@ -141,7 +251,7 @@ void QrCodeScanWidget::handleFrameCaptured(const QVideoFrame &frame) {
         return;
     }
 
-    m_progressFrame->setState(ProgressFrame::State::Recognized);
+    //updateFrameState(FrameState::Recognized);
 
     QImage img = this->videoFrameToImage(frame);
     if (img.format() == QImage::Format_ARGB32) {
@@ -231,7 +341,8 @@ void QrCodeScanWidget::onDecoded(const QString &data) {
           return;
         }
 
-        m_progressFrame->setState(ProgressFrame::State::Validated);
+    //    updateFrameState(FrameState::Validated);
+    updateFrameState(FrameState::Recognized);
 
         ui->progressBar_UR->setValue(m_decoder.estimated_percent_complete() * 100);
         ui->progressBar_UR->setMaximum(100);
@@ -249,7 +360,7 @@ void QrCodeScanWidget::onDecoded(const QString &data) {
     m_done = true;
     m_thread->stop();
 
-    m_progressFrame->setState(ProgressFrame::State::Processing);
+    updateFrameState(FrameState::Processing);
 
     emit finished(true);
 }

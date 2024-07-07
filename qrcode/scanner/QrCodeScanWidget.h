@@ -15,7 +15,6 @@
 
 #include <../bcur/bc-ur.hpp>
 #include <../bcur/ur-decoder.hpp>
-#include "progressframe.h"
 
 namespace Ui {
     class QrCodeScanWidget;
@@ -39,6 +38,9 @@ public:
     void stop();
     void pause();
 
+protected:
+    void paintEvent(QPaintEvent *event) override;
+
 signals:
     void finished(bool success);
     
@@ -61,7 +63,20 @@ private:
     ur::URDecoder m_decoder;
     bool m_done = false;
     bool m_handleFrames = true;
-    ProgressFrame *m_progressFrame;
+
+    enum class FrameState {
+        Idle,
+        Recognized,
+        Validated,
+        Processing
+    };
+    FrameState m_frameState;
+    QTimer m_animationTimer;
+    int m_animationProgress;
+
+    void drawProcessingAnimation(QPainter &painter, const QRect &rect);
+    void updateFrameState(FrameState state);
+    void animateProcessing();
 };
 
 #endif //FEATHER_QRCODESCANWIDGET_H

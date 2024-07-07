@@ -27,11 +27,6 @@
 	<number>0</number>
       </property>
       <item>
-	<layout class="QHBoxLayout" name="layout_progress">
-	  <!-- The ProgressFrame will be added here programmatically -->
-	</layout>
-      </item>
-      <item>
 	<layout class="QHBoxLayout" name="horizontalLayout_2">
 	  <item>
 	    <widget class="QLabel" name="label_3">

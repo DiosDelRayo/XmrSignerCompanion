@@ -81,7 +81,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         infoframe.h infoframe.cpp
         walletrpcmanager.h walletrpcmanager.cpp
         walletjsonrpc.h walletjsonrpc.cpp
-        qrcode/scanner/progressframe.h qrcode/scanner/progressframe.cpp
+
 
     )
 
