@@ -12,6 +12,7 @@
 #include <string>
 #include <cmath>
 #include <numeric>
+#include <assert.h>
 
 using namespace std;
 

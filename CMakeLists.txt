@@ -1,11 +1,13 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(XmrSigner VERSION 0.1 LANGUAGES CXX)
+project(XmrSigner VERSION 0.1 LANGUAGES C CXX)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -14,12 +16,10 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools Net
 find_package(ZXing REQUIRED)
 
 set(TS_FILES XmrSigner_en_US.ts)
-
+set_source_files_properties(bcur/sha2.c bcur/crc32.c PROPERTIES LANGUAGE C)
 set(PROJECT_SOURCES
         main.cpp
         mainwindow.cpp
-	components.h
-	components.cpp
         mainwindow.h
         mainwindow.ui
         qdotprogressindicator.h
@@ -28,13 +28,43 @@ set(PROJECT_SOURCES
         qaddresslineedit.cpp
         qamountlineedit.h
         qamountlineedit.cpp
+        qrcode/utils/QrCodeUtils.h
+        qrcode/utils/QrCodeUtils.cpp
         qrcode/scanner/QrCodeScanWidget.h
         qrcode/scanner/QrCodeScanWidget.cpp
         qrcode/scanner/QrCodeScanWidget.ui
         qrcode/scanner/QrScanThread.h
         qrcode/scanner/QrScanThread.cpp
+        bcur/bc-ur.hpp
+        bcur/bytewords.cpp
+        bcur/bytewords.hpp
+        bcur/cbor-lite.hpp
+        bcur/CMakeLists.txt
+        bcur/crc32.c
+        bcur/crc32.h
+        bcur/fountain-decoder.cpp
+        bcur/fountain-decoder.hpp
+        bcur/fountain-encoder.cpp
+        bcur/fountain-encoder.hpp
+        bcur/fountain-utils.cpp
+        bcur/fountain-utils.hpp
+        bcur/memzero.c
+        bcur/memzero.h
+        bcur/random-sampler.cpp
+        bcur/random-sampler.hpp
+        bcur/README.md
+        bcur/sha2.c
+        bcur/sha2.h
+        bcur/ur.cpp
         bcur/ur-decoder.cpp
         bcur/ur-decoder.hpp
+        bcur/ur-encoder.cpp
+        bcur/ur-encoder.hpp
+        bcur/ur.hpp
+        bcur/utils.cpp
+        bcur/utils.hpp
+        bcur/xoshiro256.cpp
+        bcur/xoshiro256.hpp
         ${TS_FILES}
 )
 
@@ -48,6 +78,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         qaddresslineedit.h qaddresslineedit.cpp
         qamountlineedit.h qamountlineedit.cpp
         icons.qrc
+        infoframe.h infoframe.cpp
+
     )
 
     qt_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})

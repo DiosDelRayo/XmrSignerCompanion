@@ -16,5 +16,6 @@
         <file>icons/Previous.svg</file>
         <file>icons/Valid.svg</file>
         <file>icons/Bookmarks.svg</file>
+        <file>icons/warning.png</file>
     </qresource>
 </RCC>

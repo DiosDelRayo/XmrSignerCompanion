@@ -18,16 +18,7 @@
     <normaloff>:/images/logo_black_188.png</normaloff>:/images/logo_black_188.png</iconset>
   </property>
   <property name="styleSheet">
-   <string notr="true">QMainWindow {
-background-image: url(://images/XmrSignerBG.png);
-background-position: top right;
-background-repeat: no-repeat;
-background-size: 64px 64px;
-padding-bottom: 10px;
-padding-left: 10px;
-background-clip: content;
-background-origin: content;
-}</string>
+   <string notr="true"/>
   </property>
   <widget class="QWidget" name="centralwidget">
    <property name="baseSize">
@@ -54,7 +45,46 @@ background-origin: content;
      </widget>
     </item>
     <item>
+     <spacer name="verticalSpacer_13">
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+      <property name="sizeHint" stdset="0">
+       <size>
+        <width>20</width>
+        <height>40</height>
+       </size>
+      </property>
+     </spacer>
+    </item>
+    <item>
      <spacer name="verticalSpacer_10">
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+      <property name="sizeHint" stdset="0">
+       <size>
+        <width>20</width>
+        <height>40</height>
+       </size>
+      </property>
+     </spacer>
+    </item>
+    <item>
+     <spacer name="verticalSpacer_14">
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+      <property name="sizeHint" stdset="0">
+       <size>
+        <width>20</width>
+        <height>40</height>
+       </size>
+      </property>
+     </spacer>
+    </item>
+    <item>
+     <spacer name="verticalSpacer_16">
       <property name="orientation">
        <enum>Qt::Vertical</enum>
       </property>
@@ -69,7 +99,7 @@ background-origin: content;
     <item>
      <widget class="QStackedWidget" name="stackedWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="scanViewWalletQrPage">
        <layout class="QHBoxLayout" name="verticalLayout_2">
@@ -80,25 +110,6 @@ background-origin: content;
             <width>200</width>
             <height>200</height>
            </size>
-          </property>
-          <property name="autoFillBackground">
-           <bool>false</bool>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">QLabel {
-											background-color: white;
-											border-radius: 25px;
-											padding: 20px;
-												}</string>
-          </property>
-          <property name="text" stdset="0">
-           <string/>
-          </property>
-          <property name="pixmap" stdset="0">
-           <pixmap resource="icons.qrc">:/icons/icons/Cam qr.svg</pixmap>
-          </property>
-          <property name="scaledContents" stdset="0">
-           <bool>false</bool>
           </property>
          </widget>
         </item>
@@ -147,73 +158,206 @@ background-origin: content;
        </layout>
       </widget>
       <widget class="QWidget" name="connectPage">
-       <layout class="QHBoxLayout" name="verticalLayout_3">
+       <layout class="QVBoxLayout" name="verticalLayout_3">
         <item>
-         <widget class="QLineEdit" name="nodeAddressEdit">
-          <property name="styleSheet">
-           <string notr="true">QLineEdit {
-											background-color: white;
-											color: black;
-											font-size: 36px;
-											border-radius: 35px;
-											padding: 5px;
-											min-height: 60px;
-											max-height: 60px;
-												}</string>
+         <spacer name="verticalSpacer_18">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Expanding</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QLabel" name="networkLabel">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="font">
+           <font>
+            <pointsize>16</pointsize>
+            <bold>true</bold>
+           </font>
           </property>
           <property name="text">
-           <string>http://127.0.0.1</string>
+           <string>Mainnet</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignCenter</set>
           </property>
-          <property name="placeholderText">
-           <string>Node Address</string>
-          </property>
          </widget>
         </item>
         <item>
-         <spacer name="horizontalSpacer">
+         <spacer name="networkLabelSpacer">
           <property name="orientation">
-           <enum>Qt::Horizontal</enum>
+           <enum>Qt::Vertical</enum>
           </property>
           <property name="sizeType">
            <enum>QSizePolicy::Minimum</enum>
           </property>
           <property name="sizeHint" stdset="0">
            <size>
-            <width>40</width>
-            <height>20</height>
+            <width>20</width>
+            <height>40</height>
            </size>
           </property>
          </spacer>
         </item>
         <item>
-         <widget class="QLineEdit" name="nodePortEdit">
-          <property name="styleSheet">
-           <string notr="true">QLineEdit {
-											background-color: white;
-											color: black;
-											font-size: 36px;
-											border-radius: 35px;
-											padding: 5px;
-											min-height: 60px;
-											max-height: 60px;
-												}</string>
+         <layout class="QHBoxLayout" name="horizontalLayout_connectPage">
+          <item>
+           <spacer name="horizontalSpacer_17">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Minimum</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>10</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="nodeAddressEdit">
+            <property name="minimumSize">
+             <size>
+              <width>500</width>
+              <height>70</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>1400</width>
+              <height>70</height>
+             </size>
+            </property>
+            <property name="baseSize">
+             <size>
+              <width>1024</width>
+              <height>70</height>
+             </size>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">QLineEdit {
+			  background-color: white;
+			  color: black;
+			  font-size: 36px;
+			  border-radius: 35px;
+			  padding: 5px;
+			  min-height: 60px;
+			  max-height: 60px;
+			    }</string>
+            </property>
+            <property name="text">
+             <string>http://127.0.0.1</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+            <property name="placeholderText">
+             <string>Node Address</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Fixed</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>10</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="nodePortEdit">
+            <property name="minimumSize">
+             <size>
+              <width>130</width>
+              <height>70</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>200</width>
+              <height>70</height>
+             </size>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">QLineEdit {
+			  background-color: white;
+			  color: black;
+			  font-size: 36px;
+			  border-radius: 35px;
+			  padding: 5px;
+			  min-height: 60px;
+			  max-height: 60px;
+			    }</string>
+            </property>
+            <property name="text">
+             <string>18082</string>
+            </property>
+            <property name="maxLength">
+             <number>6</number>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+            <property name="placeholderText">
+             <string>Node Port</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_18">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Minimum</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>10</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <spacer name="verticalSpacer_19">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
           </property>
-          <property name="text">
-           <string>18082</string>
+          <property name="sizeType">
+           <enum>QSizePolicy::MinimumExpanding</enum>
           </property>
-          <property name="maxLength">
-           <number>6</number>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
           </property>
-          <property name="alignment">
-           <set>Qt::AlignCenter</set>
-          </property>
-          <property name="placeholderText">
-           <string>Node Port</string>
-          </property>
-         </widget>
+         </spacer>
         </item>
        </layout>
       </widget>
@@ -236,19 +380,19 @@ background-origin: content;
          <widget class="QProgressBar" name="syncProgressBar">
           <property name="styleSheet">
            <string notr="true">QProgressBar {
-											background-color: white;
-											border-radius: 60px;
-											min-height: 100px;
-											max-height: 100px;
-											padding: 10px;
-											text-align: center;
-											color: purple;
-											font-size: 50px;
-											}
-											QProgressBar::chunk {
-											background-color: gray;
-											border-radius: 50px;
-												}</string>
+		      background-color: white;
+		      border-radius: 60px;
+		      min-height: 100px;
+		      max-height: 100px;
+		      padding: 10px;
+		      text-align: center;
+		      color: purple;
+		      font-size: 50px;
+		      }
+		      QProgressBar::chunk {
+		      background-color: gray;
+		      border-radius: 50px;
+			}</string>
           </property>
           <property name="value">
            <number>50</number>
@@ -386,34 +530,12 @@ background-origin: content;
       <widget class="QWidget" name="scanKeyImagesQrPage">
        <layout class="QHBoxLayout" name="verticalLayout_7">
         <item>
-         <widget class="QLabel" name="scanImageLabel_2">
+         <widget class="QrCodeScanWidget" name="scanKeyImages" native="true">
           <property name="minimumSize">
            <size>
             <width>200</width>
             <height>200</height>
            </size>
-          </property>
-          <property name="autoFillBackground">
-           <bool>false</bool>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">QLabel {
-											background-color: white;
-											border-radius: 25px;
-											padding: 20px;
-												}</string>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="pixmap">
-           <pixmap resource="icons.qrc">:/icons/icons/Cam qr.svg</pixmap>
-          </property>
-          <property name="scaledContents">
-           <bool>false</bool>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignCenter</set>
           </property>
          </widget>
         </item>
@@ -495,17 +617,51 @@ background-origin: content;
            </spacer>
           </item>
           <item>
+           <widget class="QLabel" name="label_2">
+            <property name="font">
+             <font>
+              <pointsize>32</pointsize>
+             </font>
+            </property>
+            <property name="text">
+             <string>Available: 12.1035076 XMR</string>
+            </property>
+            <property name="textFormat">
+             <enum>Qt::PlainText</enum>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="verticalSpacer_12">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Minimum</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
            <widget class="QAddressLineEdit" name="addressLineEdit">
             <property name="styleSheet">
              <string notr="true">QLineEdit {
-				background-color: white;
-				color: black;
-				font-size: 36px;
-				border-radius: 35px;
-				padding: 5px;
-				min-height: 60px;
-				max-height: 60px;
-					}</string>
+			  background-color: white;
+			  color: black;
+			  font-size: 36px;
+			  border-radius: 35px;
+			  padding: 5px;
+			  min-height: 60px;
+			  max-height: 60px;
+			    }</string>
             </property>
             <property name="placeholderText">
              <string>Insert reception address</string>
@@ -532,14 +688,14 @@ background-origin: content;
            <widget class="QAmountLineEdit" name="amountLineEdit">
             <property name="styleSheet">
              <string notr="true">QLineEdit {
-				background-color: white;
-				color: black;
-				font-size: 36px;
-				border-radius: 35px;
-				padding: 5px;
-				min-height: 60px;
-				max-height: 60px;
-					}</string>
+			  background-color: white;
+			  color: black;
+			  font-size: 36px;
+			  border-radius: 35px;
+			  padding: 5px;
+			  min-height: 60px;
+			  max-height: 60px;
+			    }</string>
             </property>
             <property name="placeholderText">
              <string>0.00</string>
@@ -668,10 +824,10 @@ background-origin: content;
           </property>
           <property name="styleSheet">
            <string notr="true">QLabel {
-					      background-color: white;
-					      border-radius: 25px;
-					      padding: 20px;
-						      }</string>
+		      background-color: white;
+		      border-radius: 25px;
+		      padding: 20px;
+			}</string>
           </property>
           <property name="text">
            <string/>
@@ -910,6 +1066,19 @@ background-origin: content;
      </widget>
     </item>
     <item>
+     <spacer name="verticalSpacer_15">
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+      <property name="sizeHint" stdset="0">
+       <size>
+        <width>20</width>
+        <height>40</height>
+       </size>
+      </property>
+     </spacer>
+    </item>
+    <item>
      <spacer name="verticalSpacer_8">
       <property name="orientation">
        <enum>Qt::Vertical</enum>
@@ -941,19 +1110,19 @@ background-origin: content;
          </property>
          <property name="styleSheet">
           <string notr="true">QPushButton {
-						    border-radius: 32px;
-						    }
+		    border-radius: 32px;
+		    }
 
-						    QPushButton::hover {
-						    color: purlpe;
-						    background-color: rgba(255,0, 255,0.7);
-						    }
+		    QPushButton::hover {
+		    color: purlpe;
+		    background-color: rgba(255,0, 255,0.7);
+		    }
 
 
-						    QPushButton::disabled {
-						    icon: unset;
-						    background-color: transparent;
-							    }</string>
+		    QPushButton::disabled {
+		    icon: unset;
+		    background-color: transparent;
+		      }</string>
          </property>
          <property name="text">
           <string/>
@@ -1002,19 +1171,19 @@ background-origin: content;
          </property>
          <property name="styleSheet">
           <string notr="true">QPushButton {
-						    border-radius: 32px;
-						    }
+		    border-radius: 32px;
+		    }
 
-						    QPushButton::hover {
-						    color: purlpe;
-						    background-color: rgba(255,0, 255,0.7);
-						    }
+		    QPushButton::hover {
+		    color: purlpe;
+		    background-color: rgba(255,0, 255,0.7);
+		    }
 
 
-						    QPushButton::disabled {
-						    icon: unset;
-						    background-color: transparent;
-							    }</string>
+		    QPushButton::disabled {
+		    icon: unset;
+		    background-color: transparent;
+		      }</string>
          </property>
          <property name="text">
           <string/>

@@ -13,7 +13,6 @@
 #include <utility>
 #include <string>
 #include <array>
-#include <assert.h>
 
 namespace ur {
 

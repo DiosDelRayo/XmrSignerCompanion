@@ -22,6 +22,7 @@ void QrScanThread::processQImage(const QImage &qimg)
     const auto result = QrCodeUtils::ReadBarcode(qimg, hints);
 
     if (result.isValid()) {
+        qDebug() << result.text();
         emit decoded(result.text());
     }
 }

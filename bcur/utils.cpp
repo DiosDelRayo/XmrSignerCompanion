@@ -5,6 +5,7 @@
 //  Licensed under the "BSD-2-Clause Plus Patent License"
 //
 
+#include <assert.h>
 #include "utils.hpp"
 
 extern "C" {

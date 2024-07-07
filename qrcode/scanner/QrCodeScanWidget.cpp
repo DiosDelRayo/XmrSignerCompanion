@@ -7,9 +7,7 @@
 #include <QPermission>
 #include <QMediaDevices>
 #include <QComboBox>
-
-#include "utils/config.h"
-#include "utils/Icons.h"
+#include <QDebug>
 
 QrCodeScanWidget::QrCodeScanWidget(QWidget *parent)
         : QWidget(parent)
@@ -22,8 +20,8 @@ QrCodeScanWidget::QrCodeScanWidget(QWidget *parent)
     this->setWindowTitle("Scan QR code");
     
     ui->frame_error->hide();
-    ui->frame_error->setInfo(icons()->icon("warning.png"), "Lost connection to camera");
-    
+    ui->frame_error->setInfo(QIcon(":/icons/icons/warning.png"), "Lost connection to camera");
+
     this->refreshCameraList();
     
     connect(ui->combo_camera, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &QrCodeScanWidget::onCameraSwitched);
@@ -47,7 +45,7 @@ QrCodeScanWidget::QrCodeScanWidget(QWidget *parent)
             // Check with v4l2-ctl -L
             m_camera->setExposureMode(QCamera::ExposureAuto);
         }
-        conf()->set(Config::cameraManualExposure, enabled);
+        // conf()->set(Config::cameraManualExposure, enabled);
     });
 
     connect(ui->slider_exposure, &QSlider::valueChanged, [this](int value) {
@@ -58,7 +56,7 @@ QrCodeScanWidget::QrCodeScanWidget(QWidget *parent)
         float exposure = 0.00033 * value;
         m_camera->setExposureMode(QCamera::ExposureManual);
         m_camera->setManualExposureTime(exposure);
-        conf()->set(Config::cameraExposureTime, value);
+        // conf()->set(Config::cameraExposureTime, value);
     });
 
     ui->check_manualExposure->setVisible(false);
@@ -81,6 +79,7 @@ void QrCodeScanWidget::startCapture(bool scan_ur) {
         case Qt::PermissionStatus::Denied:
             ui->frame_error->setText("No permission to start camera.");
             ui->frame_error->show();
+            qDebug() << "No permission to start camera.";
             return;
         case Qt::PermissionStatus::Granted:
             qDebug() << "Camera permission granted";
@@ -90,6 +89,7 @@ void QrCodeScanWidget::startCapture(bool scan_ur) {
     if (ui->combo_camera->count() < 1) {
         ui->frame_error->setText("No cameras found. Attach a camera and press 'Refresh'.");
         ui->frame_error->show();
+        qDebug() << "No cameras found. Attach a camera and press 'Refresh'.";
         return;
     }
     
@@ -190,22 +190,26 @@ void QrCodeScanWidget::onCameraSwitched(int index) {
     connect(m_camera.data(), &QCamera::activeChanged, [this](bool active){
         ui->frame_error->setText("Lost connection to camera");
         ui->frame_error->setVisible(!active);
+        if (!active)
+                qDebug() << "Lost connection to camera";
     });
 
     connect(m_camera.data(), &QCamera::errorOccurred, [this](QCamera::Error error, const QString &errorString) {
         if (error == QCamera::Error::CameraError) {
             ui->frame_error->setText(QString("Error: %1").arg(errorString));
             ui->frame_error->setVisible(true);
+            qDebug() << QString("Error: %1").arg(errorString);
         }
     });
 
     m_camera->start();
 
-    bool useManualExposure = conf()->get(Config::cameraManualExposure).toBool() && manualExposureSupported;
-    ui->check_manualExposure->setChecked(useManualExposure);
-    if (useManualExposure) {
-        ui->slider_exposure->setValue(conf()->get(Config::cameraExposureTime).toInt());
-    }
+    // bool useManualExposure = conf()->get(Config::cameraManualExposure).toBool() && manualExposureSupported;
+    // ui->check_manualExposure->setChecked(useManualExposure);
+    // if (useManualExposure) {
+    //    ui->slider_exposure->setValue(conf()->get(Config::cameraExposureTime).toInt());
+    //}
+    ui->slider_exposure->setValue(1);
 }
 
 void QrCodeScanWidget::onDecoded(const QString &data) {
