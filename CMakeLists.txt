@@ -79,6 +79,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         qamountlineedit.h qamountlineedit.cpp
         icons.qrc
         infoframe.h infoframe.cpp
+        walletrpcmanager.h walletrpcmanager.cpp
+        walletjsonrpc.h walletjsonrpc.cpp
 
     )
 

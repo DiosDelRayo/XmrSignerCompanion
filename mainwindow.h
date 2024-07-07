@@ -4,6 +4,8 @@
 #include <QMap>
 #include <QString>
 #include <QMainWindow>
+#include "walletrpcmanager.h"
+#include "walletjsonrpc.h"
 #include "qrcode/scanner/QrCodeScanWidget.h"
 
 QT_BEGIN_NAMESPACE
@@ -23,6 +25,8 @@ private:
     QString primaryAddress = nullptr;
     QString privateViewKey = nullptr;
     int restoreHeight = 0;
+    WalletRpcManager *walletRpcManager = nullptr;
+    WalletJsonRpc *walletRpc = nullptr;
 
     const QMap<QChar, QString> NETWORK = {
         {'4', "mainnet"},
@@ -44,6 +48,7 @@ private slots:
     void viewWalletScanFinished(bool successful);
     void removeQrCodeScanWidgetFromUi(QrCodeScanWidget *&widget);
     bool isViewOnlyWallet(const QString& qrCode);
+    void walletRpcStarted();
 
 private:
     Ui::MainWindow *ui;

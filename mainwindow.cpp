@@ -109,6 +109,15 @@ void MainWindow::viewWalletScanFinished(bool successful) {
     } else {
         ui->scanViewWallet->startCapture(false);
     }
+    this->walletRpcManager = new WalletRpcManager(this, QString("/home/thor/monero-gui-v0.18.3.3/extras/monero-wallet-rpc"), this->network, 18666);
+    connect(this->walletRpcManager, &WalletRpcManager::walletRPCStarted, this, &MainWindow::walletRpcStarted);
+    this->walletRpcManager->startWalletRPC();
+}
+
+void MainWindow::walletRpcStarted() {
+    qDebug() << "got wallet rpc started, get version";
+    this->walletRpc = new WalletJsonRpc(this, "localhost", 18666, false);
+    qDebug() << this->walletRpc->getVersion();
 }
 
 bool MainWindow::isViewOnlyWallet(const QString& qrCode) {
