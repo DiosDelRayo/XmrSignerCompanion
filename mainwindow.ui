@@ -99,7 +99,7 @@
     <item>
      <widget class="QStackedWidget" name="stackedWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="scanViewWalletQrPage">
        <layout class="QHBoxLayout" name="verticalLayout_2">
@@ -252,13 +252,13 @@
             <property name="minimumSize">
              <size>
               <width>500</width>
-              <height>70</height>
+              <height>75</height>
              </size>
             </property>
             <property name="maximumSize">
              <size>
               <width>1400</width>
-              <height>70</height>
+              <height>75</height>
              </size>
             </property>
             <property name="baseSize">
@@ -274,12 +274,13 @@
 			  font-size: 36px;
 			  border-radius: 35px;
 			  padding: 5px;
-			  min-height: 60px;
-			  max-height: 60px;
+			  min-height: 45px;
+			  max-height: 45px;
+border: 10px solid transparent;
 			    }</string>
             </property>
             <property name="text">
-             <string>http://127.0.0.1</string>
+             <string>localhost</string>
             </property>
             <property name="alignment">
              <set>Qt::AlignCenter</set>
@@ -310,13 +311,13 @@
             <property name="minimumSize">
              <size>
               <width>130</width>
-              <height>70</height>
+              <height>75</height>
              </size>
             </property>
             <property name="maximumSize">
              <size>
               <width>200</width>
-              <height>70</height>
+              <height>75</height>
              </size>
             </property>
             <property name="styleSheet">
@@ -326,12 +327,13 @@
 			  font-size: 36px;
 			  border-radius: 35px;
 			  padding: 5px;
-			  min-height: 60px;
-			  max-height: 60px;
+			  min-height: 45px;
+			  max-height: 45px;
+border: 10px solid transparent;
 			    }</string>
             </property>
             <property name="text">
-             <string>18082</string>
+             <string>18081</string>
             </property>
             <property name="maxLength">
              <number>6</number>
@@ -341,6 +343,16 @@
             </property>
             <property name="placeholderText">
              <string>Node Port</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="nodeTls">
+            <property name="text">
+             <string>TLS</string>
+            </property>
+            <property name="tristate">
+             <bool>false</bool>
             </property>
            </widget>
           </item>
@@ -361,6 +373,43 @@
            </spacer>
           </item>
          </layout>
+        </item>
+        <item>
+         <spacer name="verticalSpacer_17">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Minimum</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QLabel" name="daemonNotFoundMessage">
+          <property name="font">
+           <font>
+            <pointsize>16</pointsize>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QLabel {
+color: red;
+}</string>
+          </property>
+          <property name="text">
+           <string>Could not connect to Monero Daemon. Please try another one.</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
         </item>
         <item>
          <spacer name="verticalSpacer_19">
@@ -414,7 +463,7 @@
 			}</string>
           </property>
           <property name="value">
-           <number>50</number>
+           <number>0</number>
           </property>
          </widget>
         </item>

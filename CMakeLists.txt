@@ -81,6 +81,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         infoframe.h infoframe.cpp
         walletrpcmanager.h walletrpcmanager.cpp
         walletjsonrpc.h walletjsonrpc.cpp
+        networkchecker.h networkchecker.cpp
+        daemonjsonrpc.h daemonjsonrpc.cpp
 
 
     )

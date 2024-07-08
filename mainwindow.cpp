@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "qrcode/scanner/QrCodeScanWidget.h"
 #include "./ui_mainwindow.h"
+#include "networkchecker.h"
 #include <QVBoxLayout>
 #include <QDebug>
 #include <QJsonDocument>
@@ -12,6 +13,9 @@
 #include <QFile>
 #include <QCoreApplication>
 #include <QCloseEvent>
+#include <QHostInfo>
+#include <QNetworkReply>
+#include <QNetworkAccessManager>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent) //, Qt::FramelessWindowHint)
@@ -21,6 +25,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(this, &MainWindow::shutdownRequested, this, &MainWindow::onShutdown);
     //setAttribute(Qt::WA_TranslucentBackground);
     ui->setupUi(this);
+    setupNodeInputs();
+
     ui->prevButton->setDisabled(true);
     ui->stackedWidget->setCurrentIndex(0);
     this->syncDotIndicator(0);
@@ -67,6 +73,110 @@ MainWindow::MainWindow(QWidget *parent)
     qDebug() << "Dot Indicator is visible:" << ui->dotIndicator->isVisible();
 }
 
+void MainWindow::setupNodeInputs()
+{
+    // Setup address input
+    QRegularExpression rx(
+        "^("
+        // IPv4
+        "((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)"
+        "|"
+        // IPv6
+        "(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))"
+        "|"
+        // Domain name or local hostname
+        "([a-zA-Z0-9]([a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])?\\.)*[a-zA-Z0-9]([a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])?"
+        ")$"
+        );
+
+    this->nodeAddressValidator = new QRegularExpressionValidator(rx, this);
+    ui->nodeAddressEdit->setValidator(this->nodeAddressValidator);
+    lookupTimer = new QTimer(this);
+    lookupTimer->setSingleShot(true);
+    lookupTimer->setInterval(500); // 500ms delay
+
+    connect(ui->nodeAddressEdit, &QLineEdit::textChanged, this, &MainWindow::checkNodeAddress);
+    connect(lookupTimer, &QTimer::timeout, this, &MainWindow::checkNodeAddress);
+
+    // Setup port input
+    QRegularExpression portRx("^([1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$");
+    nodePortValidator = new QRegularExpressionValidator(portRx, this);
+    ui->nodePortEdit->setValidator(nodePortValidator);
+
+    connect(ui->nodePortEdit, &QLineEdit::textChanged, this, &MainWindow::checkNodePort);
+}
+
+void MainWindow::checkNodeAddress()
+{
+    QString host = ui->nodeAddressEdit->text().trimmed();
+    if (host.isEmpty()) {
+        ui->nodeAddressEdit->setStyleSheet("QLineEdit { background-color: white; color: black; font-size: 36px; border-radius: 35px; padding: 5px; min-height: 45px; max-height: 45px; border: 10px solid transparent; }");
+        return;
+    }
+
+    QHostInfo::lookupHost(host, this, [this](const QHostInfo &hostInfo) {
+        bool ok = (hostInfo.error() == QHostInfo::NoError);
+        ui->nodeAddressEdit->setStyleSheet(QString("QLineEdit { background-color: white; color: black; font-size: 36px; border-radius: 35px; padding: 5px; min-height: 45px; max-height: 45px; border: 10px solid %1; }").arg(ok?"green":"transparent"));
+        if(!ok)
+            ui->nextButton->setDisabled(true);
+    });
+}
+
+void MainWindow::checkNodePort()
+{
+    qDebug() << "check node port (json connection";
+    QString host = ui->nodeAddressEdit->text().trimmed();
+    QString port = ui->nodePortEdit->text().trimmed();
+    if (host.isEmpty() || port.isEmpty()) {
+        ui->nodePortEdit->setStyleSheet("QLineEdit { background-color: white; color: black; font-size: 36px; border-radius: 35px; padding: 5px; min-height: 45px; max-height: 45px; border: 10px solid transparent; }");
+        return;
+    }
+
+    // TODO: in tristate we should http and https...
+    QString url = QString("http%1://%2:%3/json_rpc")
+                      .arg(ui->nodeTls->isChecked() ? "s" : "")
+                      .arg(host)
+                      .arg(port);
+    qDebug() << "check node url: " << url;
+
+    QNetworkAccessManager *manager = new QNetworkAccessManager(this);
+    QNetworkRequest request(url);
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+
+    QJsonObject jsonObj;
+    jsonObj["jsonrpc"] = "2.0";
+    jsonObj["id"] = "0";
+    jsonObj["method"] = "get_info";
+
+    QJsonDocument doc(jsonObj);
+    QByteArray data = doc.toJson();
+
+    QNetworkReply *reply = manager->post(request, data);
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply, manager, url]() {
+        bool ok = (reply->error() == QNetworkReply::NoError);
+
+        qDebug() << "could connect to monerod node: " << (ok?"yes":"no");
+        if(ok) {
+            QByteArray response = reply->readAll();
+            QJsonDocument jsonResponse = QJsonDocument::fromJson(response);
+            QJsonObject jsonObject = jsonResponse.object();
+            ok = ok        &&
+                 jsonObject.contains("result") &&
+                 jsonObject["result"].toObject().contains("status") &&
+                 jsonObject["result"].toObject().contains("version");
+        }
+        qDebug() << "could connect to monerod response satisfying: " << (ok?"yes":"no");
+        ui->nodePortEdit->setStyleSheet(QString("QLineEdit { background-color: white; color: black; font-size: 36px; border-radius: 35px; padding: 5px; min-height: 45px; max-height: 45px; border: 10px solid %1; }").arg(ok?"green":"transparent"));
+        this->daemon_url = ok?url:nullptr;
+        this->daemonRpc = new DaemonJsonRpc(this, ui->nodeAddressEdit->text(), ui->nodePortEdit->text().toInt(), ui->nodeTls->isChecked());
+        ui->nextButton->setEnabled(ok);
+
+        reply->deleteLater();
+        manager->deleteLater();
+    });
+}
+
 void MainWindow::closeEvent(QCloseEvent *event)
 {
     emit shutdownRequested();
@@ -82,14 +192,24 @@ void MainWindow::syncDotIndicator(int index) {
         break;
     case 1:
         ui->titleLabel->setText(QString("Connect"));
-        ui->scanViewWallet->startCapture(false);
-        ui->nextButton->setEnabled(true);
+        ui->daemonNotFoundMessage->hide();
+        ui->nextButton->setEnabled(false);
+        checkNodeAddress();
+        checkNodePort();
         break;
     case 2:
         ui->titleLabel->setText(QString("Synchronize Wallet"));
+        if(this->daemon_url == nullptr)
+            QApplication::exit(1);
+        ui->nextButton->setEnabled(false);
+        this->walletRpc->setDaemon(this->daemon_url);
+        this->walletSyncProgress(true);
         break;
     case 3:
         ui->titleLabel->setText(QString("Export Outputs"));
+        qDebug() << "outputs: " << this->walletRpc->exportOutputs();
+        this->walletSyncProgress(false);
+        ui->nextButton->setEnabled(false);
         break;
     case 4:
         ui->titleLabel->setText(QString("Import Key Images"));
@@ -112,6 +232,18 @@ void MainWindow::syncDotIndicator(int index) {
     }
 }
 
+void MainWindow::checkNodeUrl() {
+    QUrl url = QUrl(QString("%1:%2").arg(ui->nodeAddressEdit->text()).arg(ui->nodePortEdit->text()));
+    if(!url.isValid()) {
+        // mark invalid
+        ui->nextButton->setDisabled(true);
+        return;
+    }
+    ui->nextButton->setEnabled(true);
+    //NetworkChecker::checkMonerodRpc(url.toString());
+    //this->walletRpc->setDaemon(url.toString(), NetworkChecker::isDomainOrIpLocal(url.host()));
+}
+
 bool MainWindow::checkLogic() {
     return true; // Return true if logic is OK to proceed, otherwise return false
 }
@@ -127,7 +259,7 @@ void MainWindow::onViewWalletScanFinished(bool successful) {
         return;
     }
     // this->walletRpcManager = new WalletRpcManager(this, QString("/home/thor/monero-gui-v0.18.3.3/extras/monero-wallet-rpc"), this->getWalletDirectory(), this->network, 18666);
-    emit this->loadingWalletRpc(1500);
+    emit this->loadingWalletRpc(15000);
     this->walletRpcManager = new WalletRpcManager(this, WalletRpcManager::findShippedWalletRpc("monero-wallet-rpc"), this->getWalletDirectory(), this->network, 18666);
     connect(this->walletRpcManager, &WalletRpcManager::walletRPCStarted, this, &MainWindow::onWalletRpcStarted);
     connect(this->walletRpcManager, &WalletRpcManager::walletRPCStopped, this, &MainWindow::onWalletRpcStopped);
@@ -178,7 +310,7 @@ void MainWindow::removeWalletFiles() {
 }
 
 void MainWindow::loadWallet() {
-    emit this->loadingWallet(1000);
+    emit this->loadingWallet(100000);
     QJsonObject response = this->walletRpc->loadWallet(
         this->restoreHeight,
         this->getWalletFile(),
@@ -246,15 +378,12 @@ void MainWindow::checkWalletRpcConnection(int attempts, int delayBetweenAttempts
 }
 
 void MainWindow::onWalletRpcReady() {
-   // load wallet
-    QTimer::singleShot(60000, this, [this]() {
-       this->loadWallet();
-   });
-    //this->loadWallet();
+    // load wallet
+    this->loadWallet();
 }
 
-void MainWindow::awaitWalletRpcForMax(int microseconds) {
-    qDebug() << "Wait for wallet rpc for more: " << microseconds << "microseconds";
+void MainWindow::awaitWalletRpcForMax(int milliseconds) {
+    qDebug() << "Wait for wallet rpc for more: " << milliseconds << "milliseconds";
 }
 
 void MainWindow::onWalletRpcFailed() {
@@ -330,4 +459,41 @@ void MainWindow::removeQrCodeScanWidgetFromUi(QrCodeScanWidget *&widget) {
     QLayout *layout = widget->parentWidget()->layout();
     layout->removeWidget(widget);
     widget->deleteLater();
+}
+
+void MainWindow::walletSyncProgress(bool active, int periodInMilliseconds) {
+    static QTimer* syncTimer = nullptr;
+
+    if (active) {
+        if (!syncTimer) {
+            syncTimer = new QTimer(this);
+            connect(syncTimer, &QTimer::timeout, this, &MainWindow::updateWalletSyncProgress);
+        }
+
+        syncTimer->start(periodInMilliseconds);
+    } else {
+        if (syncTimer) {
+            syncTimer->stop();
+            delete syncTimer;
+            syncTimer = nullptr;
+        }
+    }
+}
+
+void MainWindow::updateWalletSyncProgress() {
+    qDebug() << "update wallet sync progress";
+    int networkHeight = this->daemonRpc->getHeight();
+    int walletHeight = this->walletRpc->getHeight();
+    int percentage = walletHeight * 100 / networkHeight;
+    int missing = networkHeight - walletHeight;
+    qDebug() << "Height: " << walletHeight << "/" << networkHeight << " (" << percentage << "%) Missing: " << missing;
+    ui->syncProgressBar->setValue(percentage);
+    if(missing == 0 && networkHeight != 0) {
+        this->walletSyncProgress(false);
+        int currentIndex = ui->stackedWidget->currentIndex();
+        int nextIndex = (currentIndex + 1) % ui->stackedWidget->count();
+        ui->stackedWidget->setCurrentIndex(nextIndex);
+        ui->dotIndicator->setCurrentStep(nextIndex);
+        qDebug() << "syncing wallet done";
+    }
 }

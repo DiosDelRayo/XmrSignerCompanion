@@ -88,7 +88,7 @@ private:
     FrameState m_frameState;
     QTimer m_animationTimer;
     int m_animationProgress;
-    int m_estimatedMicroSeconds = 0;
+    int m_estimatedMilliseconds = 0;
     int m_progress = 0;
 
     void drawProcessingAnimation(QPainter &painter, const QRect &rect);
@@ -103,8 +103,8 @@ public slots:
     void onFrameStateIdle();
     void onFrameStateRecognized();
     void onFrameStateValidated();
-    void onProcessingTimeEstimate(int estimatedMicroSeconds = 5000);
-    void onFrameStateProcessing(int estimatedMicroSeconds = 5000);
+    void onProcessingTimeEstimate(int estimatedMilliseconds = 5000);
+    void onFrameStateProcessing(int estimatedMilliseconds = 5000);
     void onProgressUpdate(int percent);
     void onFrameStateProgress(int percent);
     void onFrameStateError();

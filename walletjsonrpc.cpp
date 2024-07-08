@@ -157,9 +157,13 @@ QJsonObject WalletJsonRpc::validateAddress(const QString &address, bool any_net_
     return makeRequest("validate_address", params);
 }
 
-QJsonObject WalletJsonRpc::getHeight()
+int WalletJsonRpc::getHeight()
 {
-    return makeRequest("get_height", QJsonObject());
+    int height = 0;
+    QJsonObject data = makeRequest("get_height", QJsonObject());
+    QJsonObject resultObject = data["result"].toObject();
+    height = resultObject["height"].toInt();
+    return height;
 }
 
 QJsonObject WalletJsonRpc::transfer(const QJsonArray &destinations, unsigned int account_index,
@@ -201,12 +205,14 @@ QJsonObject WalletJsonRpc::stopWallet()
     return makeRequest("stop_wallet", QJsonObject());
 }
 
-QJsonObject WalletJsonRpc::exportOutputs(bool all)
+QString WalletJsonRpc::exportOutputs(bool all)
 {
     QJsonObject params;
     params["all"] = all;
 
-    return makeRequest("export_outputs", params);
+    QJsonObject data = makeRequest("export_outputs", params);
+    QJsonObject result = data["result"].toObject();
+    return result["outputs_data_hex"].toString();
 }
 
 QJsonObject WalletJsonRpc::importKeyImages(unsigned int offset, const QJsonArray &signed_key_images)

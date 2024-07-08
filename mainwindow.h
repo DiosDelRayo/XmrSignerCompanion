@@ -5,6 +5,8 @@
 #include <QString>
 #include <QMainWindow>
 #include <QTemporaryDir>
+#include <QRegularExpressionValidator>
+#include "daemonjsonrpc.h"
 #include "walletrpcmanager.h"
 #include "walletjsonrpc.h"
 #include "qrcode/scanner/QrCodeScanWidget.h"
@@ -28,10 +30,20 @@ private:
     bool checkLogic();
     QString primaryAddress = nullptr;
     QString privateViewKey = nullptr;
+    QString daemon_url = nullptr;
     QTemporaryDir *tempDir = nullptr;
+    QRegularExpressionValidator *nodeAddressValidator;
+    QRegularExpressionValidator *nodePortValidator;
+    QTimer *lookupTimer;
+    void setupNodeInputs();
+    void checkNodeAddress();
+    void checkNodePort();
+    void walletSyncProgress(bool active, int periodInMilliseconds = 5000);
+
     int restoreHeight = 0;
     WalletRpcManager *walletRpcManager = nullptr;
     WalletJsonRpc *walletRpc = nullptr;
+    DaemonJsonRpc *daemonRpc = nullptr;
     void checkWalletRpcConnection(int attempts = 10, int delayBetweenAttempts = 500);
     void loadWallet();
     bool isViewOnlyWallet(const QString& qrCode);
@@ -40,6 +52,8 @@ private:
     QString getWalletDirectory();
     QString getWalletPath();
     void removeWalletFiles();
+    void checkNodeUrl();
+    void updateWalletSyncProgress();
     Ui::MainWindow *ui;
 
     const QMap<QChar, QString> NETWORK = {
@@ -58,13 +72,13 @@ private:
     int monerodPort = 0;
 
 signals:
-    void loadingWalletRpc(int estimatedMicroseconds);
+    void loadingWalletRpc(int estimatedMilliseconds);
     void walletRpcConnected();
     void walletRpcConnectionFailed();
-    void waitForWalletRpcConnection(int microsecondsLeft);
+    void waitForWalletRpcConnection(int millisecondsLeft);
     void waitForWalletRpc();
     void waitForWallet();
-    void loadingWallet(int estimatedMicroSeconds);
+    void loadingWallet(int estimatedMilliseconds);
     void walletLoaded();
     void walletError();
     void shutdownRequested();
@@ -78,7 +92,7 @@ private slots:
     void onWalletRpcStopped();
     void onWalletRpcError();
     void onWalletRpcReady();
-    void awaitWalletRpcForMax(int microseconds);
+    void awaitWalletRpcForMax(int milliseconds);
     void onWalletRpcFailed();
     void onWalletLoaded();
     void onWalletError();

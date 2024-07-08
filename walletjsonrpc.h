@@ -31,7 +31,7 @@ public:
 
     QJsonObject validateAddress(const QString &address, bool any_net_type = false, bool allow_openalias = false);
 
-    QJsonObject getHeight();
+    int getHeight();
 
     QJsonObject transfer(const QJsonArray &destinations, unsigned int account_index = 0,
                          const QList<unsigned int> &subaddr_indices = QList<unsigned int>(),
@@ -40,28 +40,19 @@ public:
                          bool get_tx_metadata = false);
 
     QJsonObject submitTransfer(const QString &tx_data_hex);
-
     QJsonObject stopWallet();
-
-    QJsonObject exportOutputs(bool all = false);
-
+    QString exportOutputs(bool all = true);
     QJsonObject importKeyImages(unsigned int offset, const QJsonArray &signed_key_images);
-
     QJsonObject refresh(unsigned int start_height = 0);
-
     QJsonObject rescanSpent();
-
     QJsonObject loadWallet(
         unsigned int restore_height,
         const QString &filename,
         const QString &address,
         const QString &viewkey
         );
-
     QJsonObject closeWallet();
-
     QString getVersion();
-
     QJsonObject estimateTxSizeAndWeight(unsigned int n_inputs, unsigned int n_outputs, unsigned int ring_size, bool rct);
 
 private:

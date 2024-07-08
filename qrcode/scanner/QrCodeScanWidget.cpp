@@ -10,6 +10,7 @@
 #include <QPainter>
 #include <QDebug>
 #include <algorithm>
+#include <chrono>
 
 QrCodeScanWidget::QrCodeScanWidget(QWidget *parent)
     : QWidget(parent)
@@ -72,15 +73,32 @@ QrCodeScanWidget::QrCodeScanWidget(QWidget *parent)
     ui->slider_exposure->setVisible(false);
 }
 
+int64_t getCurrentMilliseconds()
+{
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()
+    ).count();
+}
+
 void QrCodeScanWidget::drawProcessingAnimation(QPainter &painter, const QRect &rect)
 {
+    static int64_t lastRunTime = getCurrentMilliseconds();
+    int64_t currentTime = getCurrentMilliseconds();
+    int64_t elapsedMilliseconds = currentTime - lastRunTime;
+    lastRunTime = currentTime;
+
+    // Subtract elapsed time from m_estimatedMilliseconds
+    m_estimatedMilliseconds -= elapsedMilliseconds;
+    if (m_estimatedMilliseconds < 0)
+        m_estimatedMilliseconds = 0;
+
     int totalLength = ((rect.width() + rect.height()) * 2) / m_borderSize - 4;
-    m_animationProgress = m_animationProgress % totalLength; // make sure m_animationProgress < totalLength
-    int currentLength = std::min((totalLength - 1) * 100, m_estimatedMicroSeconds / 10);
+    m_animationProgress = m_animationProgress % totalLength;
+    int currentLength = std::max(std::min((totalLength - 10), m_estimatedMilliseconds / 100), 1);
     if (currentLength <= 0)
         return;  // Animation completed, nothing to draw
     int currentStart = totalLength - m_animationProgress;
-    int currentEnd = (currentStart + currentLength) % totalLength; // Ensure currentEnd falls within totalLength range
+    int currentEnd = (currentStart + currentLength) % totalLength;
     int sides[] = {
         (rect.width() - m_borderSize) / m_borderSize,
         (rect.height() - m_borderSize) / m_borderSize,
@@ -109,21 +127,28 @@ void QrCodeScanWidget::drawProcessingAnimation(QPainter &painter, const QRect &r
                 e = QPoint(!reverse ? rect.right() : (rect.left() + m_borderSize),
                            !reverse ? (rect.top() + (segEnd - start + 1) * m_borderSize) : (rect.bottom() - (segEnd - start + 1) * m_borderSize));
             }
-            painter.drawRect(QRect(s, e));
+            //painter.drawRect(QRect(s, e));
+            painter.fillRect(QRect(s,e), m_processColor);
         };
 
         if (currentStart <= currentEnd) {
-            if (start <= currentStart && currentStart <= end) {
+            if (currentStart <= start && currentEnd >= end) {
+                drawSegment(start, end);
+            } else if (start <= currentStart && currentStart <= end) {
                 drawSegment(currentStart, std::min(currentEnd, end));
             } else if (start <= currentEnd && currentEnd <= end) {
                 drawSegment(start, currentEnd);
             }
         } else {
-            if (start <= currentStart && currentStart <= end) {
-                drawSegment(currentStart, end);
-            }
-            if (start <= currentEnd && currentEnd <= end) {
-                drawSegment(start, currentEnd);
+            if (currentStart <= start || currentEnd >= end) {
+                drawSegment(start, end);
+            } else {
+                if (start <= currentStart && currentStart <= end) {
+                    drawSegment(currentStart, end);
+                }
+                if (start <= currentEnd && currentEnd <= end) {
+                    drawSegment(start, currentEnd);
+                }
             }
         }
     }
@@ -152,15 +177,15 @@ void QrCodeScanWidget::onProgressUpdate(int percent) {
 }
 
 void QrCodeScanWidget::onProcessingTimeEstimate(int estimatedMicroSeconds) {
-    m_estimatedMicroSeconds = estimatedMicroSeconds;
+    m_estimatedMilliseconds = estimatedMicroSeconds;
 }
 
 void QrCodeScanWidget::onFrameStateProcessing(int estimatedMicroSeconds) {
     if(m_frameState != FrameState::Processing) {
         updateFrameState(FrameState::Processing);
-        m_estimatedMicroSeconds = estimatedMicroSeconds;
+        m_estimatedMilliseconds = estimatedMicroSeconds;
     } else {
-        m_estimatedMicroSeconds += estimatedMicroSeconds;
+        m_estimatedMilliseconds += estimatedMicroSeconds;
     }
 }
 
