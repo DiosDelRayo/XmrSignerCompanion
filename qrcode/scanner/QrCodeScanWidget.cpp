@@ -80,44 +80,52 @@ void QrCodeScanWidget::drawProcessingAnimation(QPainter &painter, const QRect &r
     if (currentLength <= 0)
         return;  // Animation completed, nothing to draw
     int currentStart = totalLength - m_animationProgress;
-    int currentEnd = (currentStart + currentLength) % totalLength;
+    int currentEnd = (currentStart + currentLength) % totalLength; // Ensure currentEnd falls within totalLength range
     int sides[] = {
         (rect.width() - m_borderSize) / m_borderSize,
         (rect.height() - m_borderSize) / m_borderSize,
         (rect.width() - m_borderSize) / m_borderSize,
         (rect.height() - m_borderSize) / m_borderSize
     };
-    int starts[] = { 0, sides[1], sides[2], sides[3] };
-    int ends[] = { starts[1] - 1, starts[2] - 1, starts[3] - 1, totalLength -1};
-    for(int i = 0; i < 4; i++) {
+    int starts[] = { 0, sides[0], sides[0] + sides[1], sides[0] + sides[1] + sides[2] };
+    int ends[] = { sides[0] - 1, sides[0] + sides[1] - 1, sides[0] + sides[1] + sides[2] - 1, totalLength - 1};
+
+    for (int i = 0; i < 4; i++) {
         int start = starts[i];
         int end = ends[i];
-        int size = sides[i];
-        if(!(start <= currentStart <= end) && !(start <= currentEnd <= end))
-            continue; // nothing to draw on that side
         bool reverse = i > 1;
-        QPoint s;
-        QPoint e;
-        if(i % 2 == 0) {// horizontal
-            s = QPoint(
-                !reverse?(rect.left() + (currentStart - start) * m_borderSize):(rect.right() - (currentStart - start) * m_borderSize),
-                !reverse?rect.top():(rect.bottom() - m_borderSize)
-            );
-            e = QPoint(
-                !reverse?(rect.left() + m_borderSize + ((currentEnd - start) * m_borderSize)):(rect.right() - m_borderSize - ((currentEnd - start) * m_borderSize)),
-                !reverse?(rect.top() + m_borderSize):rect.bottom()
-                );
-        } else { // vertical
-            s = QPoint(
-                !reverse?(rect.right() - m_borderSize):rect.left(),
-                !reverse?(rect.top() + (currentStart - start) * m_borderSize):(rect.bottom() - (currentStart - start) * m_borderSize)
-                );
-            e = QPoint(
-                !reverse?rect.right():(rect.left() + m_borderSize),
-                !reverse?(rect.top() + (currentStart - start) * m_borderSize):(rect.bottom() - (currentStart - start) * m_borderSize)
-                );
+        bool isHorizontal = (i % 2 == 0);
+
+        auto drawSegment = [&](int segStart, int segEnd) {
+            QPoint s, e;
+            if (isHorizontal) {
+                s = QPoint(!reverse ? (rect.left() + (segStart - start) * m_borderSize) : (rect.right() - (segStart - start) * m_borderSize),
+                           !reverse ? rect.top() : (rect.bottom() - m_borderSize));
+                e = QPoint(!reverse ? (rect.left() + (segEnd - start + 1) * m_borderSize) : (rect.right() - (segEnd - start + 1) * m_borderSize),
+                           !reverse ? (rect.top() + m_borderSize) : rect.bottom());
+            } else {
+                s = QPoint(!reverse ? (rect.right() - m_borderSize) : rect.left(),
+                           !reverse ? (rect.top() + (segStart - start) * m_borderSize) : (rect.bottom() - (segStart - start) * m_borderSize));
+                e = QPoint(!reverse ? rect.right() : (rect.left() + m_borderSize),
+                           !reverse ? (rect.top() + (segEnd - start + 1) * m_borderSize) : (rect.bottom() - (segEnd - start + 1) * m_borderSize));
+            }
+            painter.drawRect(QRect(s, e));
+        };
+
+        if (currentStart <= currentEnd) {
+            if (start <= currentStart && currentStart <= end) {
+                drawSegment(currentStart, std::min(currentEnd, end));
+            } else if (start <= currentEnd && currentEnd <= end) {
+                drawSegment(start, currentEnd);
+            }
+        } else {
+            if (start <= currentStart && currentStart <= end) {
+                drawSegment(currentStart, end);
+            }
+            if (start <= currentEnd && currentEnd <= end) {
+                drawSegment(start, currentEnd);
+            }
         }
-        painter.drawRect(QRect(s, e));
     }
 }
 
