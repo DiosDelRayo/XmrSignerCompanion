@@ -58,6 +58,11 @@ MainWindow::MainWindow(QWidget *parent)
     connect(this, &MainWindow::walletLoaded, this, &MainWindow::onWalletLoaded);
     connect(this, &MainWindow::walletError, this, &MainWindow::onWalletError);
 
+    connect(this, &MainWindow::validViewWalletQr, ui->scanViewWallet, &QrCodeScanWidget::onFrameStateValidated);
+    connect(this, &MainWindow::invalidQr, ui->scanViewWallet, &QrCodeScanWidget::onFrameStateError);
+    connect(this, &MainWindow::loadingWalletRpc, ui->scanViewWallet, &QrCodeScanWidget::onFrameStateProcessing);
+    connect(this, &MainWindow::loadingWallet, ui->scanViewWallet, &QrCodeScanWidget::onFrameStateProcessing);
+
     qDebug() << "Dot Indicator size:" << ui->dotIndicator->size();
     qDebug() << "Dot Indicator is visible:" << ui->dotIndicator->isVisible();
 }
@@ -122,6 +127,7 @@ void MainWindow::onViewWalletScanFinished(bool successful) {
         return;
     }
     // this->walletRpcManager = new WalletRpcManager(this, QString("/home/thor/monero-gui-v0.18.3.3/extras/monero-wallet-rpc"), this->getWalletDirectory(), this->network, 18666);
+    emit this->loadingWalletRpc(1500);
     this->walletRpcManager = new WalletRpcManager(this, WalletRpcManager::findShippedWalletRpc("monero-wallet-rpc"), this->getWalletDirectory(), this->network, 18666);
     connect(this->walletRpcManager, &WalletRpcManager::walletRPCStarted, this, &MainWindow::onWalletRpcStarted);
     connect(this->walletRpcManager, &WalletRpcManager::walletRPCStopped, this, &MainWindow::onWalletRpcStopped);
@@ -172,6 +178,7 @@ void MainWindow::removeWalletFiles() {
 }
 
 void MainWindow::loadWallet() {
+    emit this->loadingWallet(1000);
     QJsonObject response = this->walletRpc->loadWallet(
         this->restoreHeight,
         this->getWalletFile(),
@@ -240,7 +247,10 @@ void MainWindow::checkWalletRpcConnection(int attempts, int delayBetweenAttempts
 
 void MainWindow::onWalletRpcReady() {
    // load wallet
-    this->loadWallet();
+    QTimer::singleShot(60000, this, [this]() {
+       this->loadWallet();
+   });
+    //this->loadWallet();
 }
 
 void MainWindow::awaitWalletRpcForMax(int microseconds) {
@@ -268,8 +278,10 @@ void MainWindow::onWalletError() {
 }
 
 bool MainWindow::isViewOnlyWallet(const QString& qrCode) {
-    if (qrCode.isEmpty())
+    if (qrCode.isEmpty()) {
+        emit this->invalidQr();
         return false;
+    }
 
     if (qrCode.startsWith("monero_wallet:")) {
         // Use regex to extract the address part
@@ -307,7 +319,9 @@ bool MainWindow::isViewOnlyWallet(const QString& qrCode) {
         ui->networkLabel->setText(this->network.toUpper());
         ui->networkLabel->setVisible(this->network != NETWORK['4']);
         return true;
+        emit this->validViewWalletQr();
     }
+    emit this->invalidQr();
     return false;
 }
 

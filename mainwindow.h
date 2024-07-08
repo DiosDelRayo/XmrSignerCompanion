@@ -58,12 +58,18 @@ private:
     int monerodPort = 0;
 
 signals:
+    void loadingWalletRpc(int estimatedMicroseconds);
     void walletRpcConnected();
     void walletRpcConnectionFailed();
     void waitForWalletRpcConnection(int microsecondsLeft);
+    void waitForWalletRpc();
+    void waitForWallet();
+    void loadingWallet(int estimatedMicroSeconds);
     void walletLoaded();
     void walletError();
     void shutdownRequested();
+    void validViewWalletQr();
+    void invalidQr();
 
 private slots:
     void syncDotIndicator(int index);

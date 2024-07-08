@@ -38,6 +38,11 @@ public:
     void stop();
     void pause();
 
+    void setProcessColor(const QColor &color);
+    void setProgressColor(const QColor &color);
+    void setUnscannedUrColor(const QColor &color);
+    void setScannedUrColor(const QColor &color);
+
 protected:
     void paintEvent(QPaintEvent *event) override;
 
@@ -64,6 +69,14 @@ private:
     bool m_done = false;
     bool m_handleFrames = true;
 
+    int m_borderSize = 4;
+    int m_totalUrFrames = 0;
+    int m_currentUrFrame = 0;
+    QColor m_processColor = Qt::blue;
+    QColor m_progressColor = Qt::green;
+    QColor m_unscannedUrColor = Qt::blue;
+    QColor m_scannedUrColor = Qt::green;
+
     enum class FrameState {
         Idle,
         Recognized,
@@ -81,18 +94,22 @@ private:
     void drawProcessingAnimation(QPainter &painter, const QRect &rect);
     void updateFrameState(FrameState state);
     void animateProcessing();
+    void drawProgressAnimation(QPainter &painter, const QRect &rect);
+    void drawUrFramesProgress(QPainter &painter, const QRect &rect);
+    int calculateTotalPixels(const QRect &rect) const;
+    QPoint getPointFromPixel(const QRect &rect, int pixel) const;
 
 public slots:
     void onFrameStateIdle();
     void onFrameStateRecognized();
     void onFrameStateValidated();
-    void onFrameStateProcessing();
-    void onProcessingTimeEstimate(int estimatedMicroSeconds);
-    void onFrameStateProcessing(int estimatedMicroSeconds);
-    void onFrameStateProgress();
+    void onProcessingTimeEstimate(int estimatedMicroSeconds = 5000);
+    void onFrameStateProcessing(int estimatedMicroSeconds = 5000);
     void onProgressUpdate(int percent);
     void onFrameStateProgress(int percent);
     void onFrameStateError();
+    void onUrFrame(int currentFrame);
+    void onTotalUrFrames(int totalFrames);
 };
 
 #endif //FEATHER_QRCODESCANWIDGET_H
