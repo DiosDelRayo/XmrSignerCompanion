@@ -54,6 +54,7 @@ private:
     void removeWalletFiles();
     void checkNodeUrl();
     void updateWalletSyncProgress();
+    QString getFingerprint();
     Ui::MainWindow *ui;
 
     const QMap<QChar, QString> NETWORK = {

@@ -28,13 +28,21 @@ set(PROJECT_SOURCES
         qaddresslineedit.cpp
         qamountlineedit.h
         qamountlineedit.cpp
+        dialog/URSettingsDialog.cpp
+        dialog/URSettingsDialog.h
+        dialog/URSettingsDialog.ui
         qrcode/utils/QrCodeUtils.h
         qrcode/utils/QrCodeUtils.cpp
+        qrcode/QrCodeWidget.h
+        qrcode/QrCodeWidget.cpp
         qrcode/scanner/QrCodeScanWidget.h
         qrcode/scanner/QrCodeScanWidget.cpp
         qrcode/scanner/QrCodeScanWidget.ui
         qrcode/scanner/QrScanThread.h
         qrcode/scanner/QrScanThread.cpp
+        qrcode/scanner/URWidget.h
+        qrcode/scanner/URWidget.cpp
+        qrcode/scanner/URWidget.ui
         bcur/bc-ur.hpp
         bcur/bytewords.cpp
         bcur/bytewords.hpp
@@ -83,6 +91,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         walletjsonrpc.h walletjsonrpc.cpp
         networkchecker.h networkchecker.cpp
         daemonjsonrpc.h daemonjsonrpc.cpp
+        windowmodaldialog.h windowmodaldialog.cpp
 
 
     )

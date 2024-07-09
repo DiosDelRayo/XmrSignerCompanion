@@ -16,6 +16,9 @@
 #include <QHostInfo>
 #include <QNetworkReply>
 #include <QNetworkAccessManager>
+#include <QCryptographicHash>
+#include <QByteArray>
+
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent) //, Qt::FramelessWindowHint)
@@ -201,6 +204,7 @@ void MainWindow::syncDotIndicator(int index) {
         ui->titleLabel->setText(QString("Synchronize Wallet"));
         if(this->daemon_url == nullptr)
             QApplication::exit(1);
+        ui->fingerprintLabel->setText(QString("Fingerprint: %1").arg(this->getFingerprint()));
         ui->nextButton->setEnabled(false);
         this->walletRpc->setDaemon(this->daemon_url);
         this->walletSyncProgress(true);
@@ -496,4 +500,18 @@ void MainWindow::updateWalletSyncProgress() {
         ui->dotIndicator->setCurrentStep(nextIndex);
         qDebug() << "syncing wallet done";
     }
+}
+
+QString MainWindow::getFingerprint() {
+    // Convert QString to std::string
+    std::string addressStr = this->primaryAddress.toStdString();
+
+    // Compute SHA256 hash
+    QByteArray hash = QCryptographicHash::hash(QByteArray::fromStdString(addressStr), QCryptographicHash::Sha256);
+
+    // Convert hash to hexadecimal string
+    QString hashHex = hash.toHex();
+
+    // Return the last 6 characters
+    return hashHex.right(6).toUpper();
 }

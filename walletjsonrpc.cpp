@@ -283,3 +283,9 @@ QJsonObject WalletJsonRpc::estimateTxSizeAndWeight(unsigned int n_inputs, unsign
 
     return makeRequest("estimate_tx_size_and_weight", params);
 }
+
+
+QString WalletJsonRpc::getFingerprint()
+{
+    return nullptr;
+}

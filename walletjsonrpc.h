@@ -54,6 +54,7 @@ public:
     QJsonObject closeWallet();
     QString getVersion();
     QJsonObject estimateTxSizeAndWeight(unsigned int n_inputs, unsigned int n_outputs, unsigned int ring_size, bool rct);
+    QString getFingerprint();
 
 private:
     QJsonObject makeRequest(const QString &method, const QJsonObject &params);

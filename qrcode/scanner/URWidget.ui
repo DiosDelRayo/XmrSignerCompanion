@@ -61,7 +61,7 @@
         <string/>
        </property>
        <property name="icon">
-        <iconset resource="../assets.qrc">
+        <iconset>
          <normaloff>:/assets/images/preferences.svg</normaloff>:/assets/images/preferences.svg</iconset>
        </property>
       </widget>
@@ -74,12 +74,10 @@
   <customwidget>
    <class>QrCodeWidget</class>
    <extends>QWidget</extends>
-   <header>widgets/QrCodeWidget.h</header>
+   <header>qrcode/QrCodeWidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
- <resources>
-  <include location="../assets.qrc"/>
- </resources>
+ <resources/>
  <connections/>
 </ui>

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Feather Wallet
+GenericName=Monero Wallet
+Comment=A free Monero desktop wallet
+Icon=feather
+Exec=feather
+Terminal=false
+Categories=Network;
+StartupNotify=false
+StartupWMClass=feather
