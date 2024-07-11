@@ -7,11 +7,15 @@
 #include "qamountlineedit.h"
 #include "qdotprogressindicator.h"
 #include "qrcode/scanner/QrCodeScanWidget.h"
+#include "qrcode/QrCodeWidget.h"
+#include "qrcode/scanner/URWidget.h"
 
 Q_DECLARE_METATYPE(QAddressLineEdit*)
 Q_DECLARE_METATYPE(QAmountLineEdit*)
 Q_DECLARE_METATYPE(QDotProgressIndicator*)
 Q_DECLARE_METATYPE(QrCodeScanWidget*)
+Q_DECLARE_METATYPE(QrCodeWidget*)
+Q_DECLARE_METATYPE(URWidget*)
 
 int main(int argc, char *argv[])
 {

@@ -99,7 +99,7 @@
     <item>
      <widget class="QStackedWidget" name="stackedWidget">
       <property name="currentIndex">
-       <number>3</number>
+       <number>5</number>
       </property>
       <widget class="QWidget" name="scanViewWalletQrPage">
        <layout class="QHBoxLayout" name="verticalLayout_2">
@@ -123,6 +123,9 @@
             <width>200</width>
             <height>200</height>
            </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QrCodeScanWidget { padding: 10px; }</string>
           </property>
          </widget>
         </item>
@@ -445,6 +448,92 @@ color: red;
          </spacer>
         </item>
         <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_5">
+          <item>
+           <spacer name="horizontalSpacer_20">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Minimum</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QLabel" name="missingBlocks">
+            <property name="text">
+             <string>Blocks missing: 0</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_23">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QLabel" name="avgBlockPerSecond">
+            <property name="text">
+             <string>0 blocks/s</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_21">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QLabel" name="syncETA">
+            <property name="text">
+             <string>ETA: calculating...</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_22">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Minimum</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </item>
+        <item>
          <widget class="QProgressBar" name="syncProgressBar">
           <property name="styleSheet">
            <string notr="true">QProgressBar {
@@ -562,24 +651,12 @@ color: red;
       <widget class="QWidget" name="outputsQrPage">
        <layout class="QHBoxLayout" name="verticalLayout_5">
         <item>
-         <widget class="QLabel" name="qrCodeLabel">
+         <widget class="URWidget" name="outputsUR" native="true">
           <property name="minimumSize">
            <size>
             <width>200</width>
             <height>200</height>
            </size>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="pixmap">
-           <pixmap resource="icons.qrc">:/images/qr.png</pixmap>
-          </property>
-          <property name="scaledContents">
-           <bool>false</bool>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignCenter</set>
           </property>
          </widget>
         </item>
@@ -685,7 +762,7 @@ color: red;
            </spacer>
           </item>
           <item>
-           <widget class="QLabel" name="label_2">
+           <widget class="QLabel" name="availableAmount">
             <property name="font">
              <font>
               <pointsize>32</pointsize>
@@ -719,7 +796,7 @@ color: red;
            </spacer>
           </item>
           <item>
-           <widget class="QAddressLineEdit" name="addressLineEdit">
+           <widget class="QAddressLineEdit" name="address">
             <property name="styleSheet">
              <string notr="true">QLineEdit {
 			  background-color: white;
@@ -727,8 +804,9 @@ color: red;
 			  font-size: 36px;
 			  border-radius: 35px;
 			  padding: 5px;
-			  min-height: 60px;
-			  max-height: 60px;
+			  min-height: 45px;
+			  max-height: 45px;
+border: 10px solid transparent;
 			    }</string>
             </property>
             <property name="placeholderText">
@@ -753,7 +831,7 @@ color: red;
            </spacer>
           </item>
           <item>
-           <widget class="QAmountLineEdit" name="amountLineEdit">
+           <widget class="QAmountLineEdit" name="amount">
             <property name="styleSheet">
              <string notr="true">QLineEdit {
 			  background-color: white;
@@ -761,8 +839,9 @@ color: red;
 			  font-size: 36px;
 			  border-radius: 35px;
 			  padding: 5px;
-			  min-height: 60px;
-			  max-height: 60px;
+			  min-height: 45px;
+			  max-height: 45px;
+border: 10px solid transparent;
 			    }</string>
             </property>
             <property name="placeholderText">
@@ -1295,6 +1374,12 @@ color: red;
    <class>QrCodeScanWidget</class>
    <extends>QWidget</extends>
    <header>qrcode/scanner/QrCodeScanWidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>URWidget</class>
+   <extends>QWidget</extends>
+   <header>qrcode/scanner/URWidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

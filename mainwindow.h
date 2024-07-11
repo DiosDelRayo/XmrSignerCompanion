@@ -15,6 +15,8 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
+#define SPENDABLE_TRESHOLD 0
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -34,11 +36,18 @@ private:
     QTemporaryDir *tempDir = nullptr;
     QRegularExpressionValidator *nodeAddressValidator;
     QRegularExpressionValidator *nodePortValidator;
+    QRegularExpressionValidator *addressValidator;
+    QRegularExpressionValidator *amountRegexValidator;
     QTimer *lookupTimer;
     void setupNodeInputs();
     void checkNodeAddress();
     void checkNodePort();
     void walletSyncProgress(bool active, int periodInMilliseconds = 5000);
+    void setupSendXmrInputs();
+    void checkAddress();
+    void checkAmount();
+    void updateSendButtonState();
+    double getAmountValue();
 
     int restoreHeight = 0;
     WalletRpcManager *walletRpcManager = nullptr;
@@ -54,6 +63,13 @@ private:
     void removeWalletFiles();
     void checkNodeUrl();
     void updateWalletSyncProgress();
+    void sendXmrPage();
+    void updateAvailableXmr();
+    void syncAvailableXmr(bool active, int periodInMilliseconds = 5000);
+    void insufficientFunds(); // should give access to the addresses...
+    QString relativeXmr(unsigned int amount);
+    QString relativeTimeFromMilliseconds(int milliseconds);
+    QString relativeBlocksPerSecond(int blocks);
     QString getFingerprint();
     Ui::MainWindow *ui;
 
@@ -71,6 +87,7 @@ private:
 
     QString network = NETWORK['4'];
     int monerodPort = 0;
+    unsigned int availableBalance = 0;
 
 signals:
     void loadingWalletRpc(int estimatedMilliseconds);
@@ -89,6 +106,7 @@ signals:
 private slots:
     void syncDotIndicator(int index);
     void onViewWalletScanFinished(bool successful);
+    void onKeyImagesScanFinished(bool successful);
     void onWalletRpcStarted();
     void onWalletRpcStopped();
     void onWalletRpcError();

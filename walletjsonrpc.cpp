@@ -2,6 +2,10 @@
 #include <QJsonDocument>
 #include <QNetworkReply>
 #include <QEventLoop>
+#include <QByteArray>
+#include <QString>
+#include <QJsonArray>
+#include <QJsonObject>
 
 WalletJsonRpc::WalletJsonRpc(
     QObject *parent,
@@ -64,40 +68,18 @@ QJsonObject WalletJsonRpc::makeRequest(const QString &method, const QJsonObject 
     return response;
 }
 
-/*
-QJsonObject WalletJsonRpc::makeRequest(const QString &method, const QJsonObject &params)
-{
-    QJsonObject request;
-    request["jsonrpc"] = "2.0";
-    request["id"] = "0";
-    request["method"] = method;
-    request["params"] = params;
-
-    QNetworkAccessManager manager;
-    QNetworkRequest networkRequest(QUrl(QString("http%1://%2:%3/json_rpc").arg(m_tls?"s":"").arg(m_host).arg(m_port)));
-    networkRequest.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-
-    QNetworkReply *reply = manager.post(networkRequest, QJsonDocument(request).toJson());
-
-    QEventLoop loop;
-    connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
-    loop.exec();
-
-    if (reply->error() == QNetworkReply::NoError) {
-        QJsonObject response = QJsonDocument::fromJson(reply->readAll()).object();
-        reply->deleteLater();
-        return response["result"].toObject();
-    } else {
-        reply->deleteLater();
-        return QJsonObject();
-    }
-}
-*/
-
-QJsonObject WalletJsonRpc::setDaemon(const QString &address, bool trusted, const QString &ssl_support,
-                                     const QString &ssl_private_key_path, const QString &ssl_certificate_path,
-                                     const QString &ssl_ca_file, const QStringList &ssl_allowed_fingerprints,
-                                     bool ssl_allow_any_cert, const QString &username, const QString &password)
+bool WalletJsonRpc::setDaemon(
+    const QString &address,
+    bool trusted,
+    const QString &ssl_support,
+    const QString &ssl_private_key_path,
+    const QString &ssl_certificate_path,
+    const QString &ssl_ca_file,
+    const QStringList &ssl_allowed_fingerprints,
+    bool ssl_allow_any_cert,
+    const QString &username,
+    const QString &password
+    )
 {
     QJsonObject params;
     params["address"] = address;
@@ -111,133 +93,342 @@ QJsonObject WalletJsonRpc::setDaemon(const QString &address, bool trusted, const
     if (!username.isEmpty()) params["username"] = username;
     if (!password.isEmpty()) params["password"] = password;
 
-    return makeRequest("set_daemon", params);
+    return makeRequest("set_daemon", params).contains("result");
 }
 
-QJsonObject WalletJsonRpc::getBalance(unsigned int account_index, const QList<unsigned int> &address_indices,
-                                      bool all_accounts, bool strict)
+BalanceResult WalletJsonRpc::getBalance(
+    unsigned int account_index,
+    const QList<unsigned int> &address_indices,
+    bool all_accounts,
+    bool strict
+    )
 {
     QJsonObject params;
-    params["account_index"] = static_cast<int>(account_index);
+    params["account_index"] = static_cast<qint64>(account_index);
     if (!address_indices.isEmpty()) {
         QJsonArray indices;
         for (unsigned int index : address_indices) {
-            indices.append(static_cast<int>(index));
+            indices.append(static_cast<qint64>(index));
         }
         params["address_indices"] = indices;
     }
-    params["all_accounts"] = all_accounts;
-    params["strict"] = strict;
+    if(all_accounts)
+            params["all_accounts"] = all_accounts;
+    if(strict)
+            params["strict"] = strict;
 
-    return makeRequest("get_balance", params);
+    BalanceResult out;
+    QJsonObject data = makeRequest("get_balance", params);
+    if(data.contains("error")) {
+        QJsonObject error = data["error"].toObject();
+        return BalanceResult(true, error["code"].toInt(), error["message"].toString());
+    }
+    qDebug() << "json:get_balance: " << data;
+    if(data.contains("result")) {
+        QJsonObject result = data["result"].toObject();
+        out = BalanceResult(
+            result["balance"].toInteger(),
+            result["unlocked_balance"].toInteger(),
+            result["multisig_import_needed"].toBool(),
+            result["time_to_unlock"].toInt(),
+            result["blocks_to_unlock"].toInt());
+            QJsonArray json_per_subaddress = result["per_subaddress"].toArray();
+            for(int i = 0; i < json_per_subaddress.count(); i++) {
+                QJsonObject jsab = json_per_subaddress[i].toObject();
+                SubaddressBalance sab = SubaddressBalance(
+                    jsab["account_index"].toInteger(),
+                    jsab["address_index"].toInteger(),
+                    jsab["address"].toString(),
+                    jsab["balance"].toInteger(),
+                    jsab["unlocked_balance"].toInteger(),
+                    jsab["label"].toString(),
+                    jsab["num_unspent_outputs "].toInteger(),
+                    jsab["time_to_unlock"].toInt(),
+                    jsab["blocks_to_unlock "].toInt());
+                out.per_subaddress.append(sab);
+            }
+    }
+    return out;
 }
 
-QJsonObject WalletJsonRpc::getAddress(unsigned int account_index, const QList<unsigned int> &address_indices)
+AddressResult WalletJsonRpc::getAddress(unsigned int account_index, const QList<unsigned int> &address_indices)
 {
     QJsonObject params;
-    params["account_index"] = static_cast<int>(account_index);
+    params["account_index"] = static_cast<qint64>(account_index);
     if (!address_indices.isEmpty()) {
         QJsonArray indices;
         for (unsigned int index : address_indices) {
-            indices.append(static_cast<int>(index));
+            indices.append(static_cast<qint64>(index));
         }
         params["address_index"] = indices;
     }
 
-    return makeRequest("get_address", params);
+    QJsonObject data = makeRequest("get_address", params);
+    AddressResult out = AddressResult();
+    if(data.contains("error")) {
+        QJsonObject error = data["error"].toObject();
+        return AddressResult(true, error["code"].toInt(), error["message"].toString());
+    }
+    if(data.contains("result")) {
+        QJsonObject result = data["result"].toObject();
+        out = AddressResult(result["address"].toString());
+        if(result.contains("addresses")) {
+            QJsonArray jsonAddresses = result["addresses"].toArray();
+            for(int i=0; i<jsonAddresses.count(); i++) {
+                QJsonObject jsonAddress = jsonAddresses[i].toObject();
+                SubAddress address = SubAddress(
+                    jsonAddress["address"].toString(),
+                    jsonAddress["label"].toString(),
+                    jsonAddress["address_index"].toInteger(),
+                    jsonAddress["used"].toBool());
+                out.addresses.append(address);
+            }
+        }
+    }
+    return out;
 }
 
-QJsonObject WalletJsonRpc::validateAddress(const QString &address, bool any_net_type, bool allow_openalias)
+ValidateAddressResult WalletJsonRpc::validateAddress(const QString &address, bool any_net_type, bool allow_openalias)
 {
     QJsonObject params;
     params["address"] = address;
     params["any_net_type"] = any_net_type;
     params["allow_openalias"] = allow_openalias;
 
-    return makeRequest("validate_address", params);
+    QJsonObject data = makeRequest("validate_address", params);
+    ValidateAddressResult out = ValidateAddressResult();
+    if(data.contains("error")) {
+        QJsonObject error = data["error"].toObject();
+        return ValidateAddressResult(true, error["code"].toInt(), error["message"].toString());
+    }
+    if(data.contains("result")) {
+        QJsonObject result = data["result"].toObject();
+        out = ValidateAddressResult(
+            result["valid"].toBool(),
+            result["integrated"].toBool(),
+            result["subaddress"].toBool(),
+            result["openalias_address"].toString(),
+            result["nettype"].toString()
+            );
+    }
+    return out;
 }
 
-int WalletJsonRpc::getHeight()
+HeightResult WalletJsonRpc::getHeight()
 {
-    int height = 0;
     QJsonObject data = makeRequest("get_height", QJsonObject());
-    QJsonObject resultObject = data["result"].toObject();
-    height = resultObject["height"].toInt();
-    return height;
+    if(data.contains("error")) {
+        QJsonObject error = data["error"].toObject();
+        return HeightResult(true, error["code"].toInt(), error["message"].toString());
+    }
+    if(data.contains("result"))
+        return HeightResult((data["result"].toObject()["height"].toInteger()));
+    return HeightResult();
 }
 
-QJsonObject WalletJsonRpc::transfer(const QJsonArray &destinations, unsigned int account_index,
-                                    const QList<unsigned int> &subaddr_indices, unsigned int priority,
-                                    unsigned int ring_size, unsigned int unlock_time, bool get_tx_key,
-                                    bool do_not_relay, bool get_tx_hex, bool get_tx_metadata)
+unsigned int WalletJsonRpc::getSimpleHeight()
+{
+    HeightResult hr = this->getHeight();
+    if(hr.error)
+        return HEIGHT_ERROR;
+    return hr.height;
+}
+
+TransferResult WalletJsonRpc::transfer(
+    const QList<Destination> &destinations,
+    unsigned int account_index,
+    const QList<unsigned int> &subaddr_indices,
+    unsigned int priority,
+    unsigned int ring_size,
+    unsigned int unlock_time,
+    bool get_tx_key,
+    bool do_not_relay,
+    bool get_tx_hex,
+    bool get_tx_metadata
+    )
 {
     QJsonObject params;
-    params["destinations"] = destinations;
-    params["account_index"] = static_cast<int>(account_index);
+    QJsonArray jsonDestinations = QJsonArray();
+    for(int i=0; i<destinations.count(); i++) {
+        Destination destination = destinations.at(i);
+        QJsonObject jsonDestination = QJsonObject();
+        jsonDestination["address"] = destination.address;
+        jsonDestination["amount"] = static_cast<qint64>(destination.amount);
+        jsonDestinations.append(jsonDestination);
+    }
+    params["destinations"] = jsonDestinations;
+    params["account_index"] = static_cast<qint64>(account_index);
     if (!subaddr_indices.isEmpty()) {
         QJsonArray indices;
         for (unsigned int index : subaddr_indices) {
-            indices.append(static_cast<int>(index));
+            indices.append(static_cast<qint64>(index));
         }
         params["subaddr_indices"] = indices;
     }
     params["priority"] = static_cast<int>(priority);
     params["ring_size"] = static_cast<int>(ring_size);
     params["unlock_time"] = static_cast<int>(unlock_time);
-    params["get_tx_key"] = get_tx_key;
-    params["do_not_relay"] = do_not_relay;
-    params["get_tx_hex"] = get_tx_hex;
-    params["get_tx_metadata"] = get_tx_metadata;
+    if(get_tx_key)
+            params["get_tx_key"] = get_tx_key;
+    if(do_not_relay)
+            params["do_not_relay"] = do_not_relay;
+    if(get_tx_hex)
+            params["get_tx_hex"] = get_tx_hex;
+    if(get_tx_metadata)
+            params["get_tx_metadata"] = get_tx_metadata;
 
-    return makeRequest("transfer", params);
+    QJsonObject data = makeRequest("transfer", params);
+    if(data.contains("error")) {
+        QJsonObject error = data["error"].toObject();
+        return TransferResult(true, error["code"].toInt(), error["message"].toString());
+    }
+    TransferResult out;
+    if(data.contains("result")) {
+        QJsonObject result = data["result"].toObject();
+        out = TransferResult(
+            result["amount"].toInteger(0),
+            result["fee"].toInteger(0),
+            result["multisig_txset"].toString(),
+            result["tx_blob"].toString(),
+            result["tx_hash"].toString(),
+            result["tx_key"].toString(),
+            result["unsigned_txset"].toString()
+            );
+    }
+    return out;
 }
 
-QJsonObject WalletJsonRpc::submitTransfer(const QString &tx_data_hex)
+SubmitTransferResult WalletJsonRpc::submitTransfer(const QString &tx_data_hex)
 {
     QJsonObject params;
     params["tx_data_hex"] = tx_data_hex;
 
-    return makeRequest("submit_transfer", params);
+    QJsonObject data = makeRequest("submit_transfer", params);
+    if(data.contains("error")) {
+        QJsonObject error = data["error"].toObject();
+        return SubmitTransferResult(true, error["code"].toInt(), error["message"].toString());
+    }
+    SubmitTransferResult out;
+    if(data.contains("result")) {
+        QJsonObject result = data["result"].toObject();
+        if(result.contains("tx_hash_list")) {
+            QJsonArray list = result["tx_hash_list"].toArray();
+            for(int i=0;i<list.count();i++)
+                out.tx_hash_list.append(list[i].toString());
+
+        }
+    }
+    return out;
 }
 
-QJsonObject WalletJsonRpc::stopWallet()
+bool WalletJsonRpc::stopWallet()
 {
-    return makeRequest("stop_wallet", QJsonObject());
+    return makeRequest("stop_wallet", QJsonObject()).contains("result");
 }
 
-QString WalletJsonRpc::exportOutputs(bool all)
+ExportOutputsResult WalletJsonRpc::exportOutputs(bool all)
 {
     QJsonObject params;
     params["all"] = all;
 
     QJsonObject data = makeRequest("export_outputs", params);
-    QJsonObject result = data["result"].toObject();
-    return result["outputs_data_hex"].toString();
+
+    if(data.contains("error")) {
+        QJsonObject error = data["error"].toObject();
+        return ExportOutputsResult(true, error["code"].toInt(), error["message"].toString());
+    }
+    if(data.contains("result")) {
+        QJsonObject result = data["result"].toObject();
+        return ExportOutputsResult(result["outputs_data_hex"].toString());
+    }
+    return ExportOutputsResult(true, 0, "WTF just happend in WalletJsonRpc?"); // shouldn't reah here, bt who knows...
 }
 
-QJsonObject WalletJsonRpc::importKeyImages(unsigned int offset, const QJsonArray &signed_key_images)
+QString WalletJsonRpc::exportSimpleOutputs(bool all)
 {
+    ExportOutputsResult eor = this->exportOutputs(all);
+    if(eor.error)
+        return "";
+    return eor.outputs_data_hex;
+}
+
+KeyImageImportResult WalletJsonRpc::importKeyImages(const QJsonArray &signed_key_images, unsigned int offset)
+{
+    qDebug() << "rpc:import_key_images: " << signed_key_images << " offset: " << offset;
     QJsonObject params;
-    params["offset"] = static_cast<int>(offset);
+    if(offset != 0)
+            params["offset"] = static_cast<int>(offset);
     params["signed_key_images"] = signed_key_images;
 
-    return makeRequest("import_key_images", params);
+    QJsonObject result;
+    QJsonObject data = makeRequest("import_key_images", params);
+    qDebug() << "rpc:import_key_images: result: " << data;
+    if(data.contains("error")) {
+        QJsonObject error = data["error"].toObject();
+        return KeyImageImportResult(true, error["code"].toInt(), error["message"].toString());
+    }
+
+    if (data.contains("result")) {
+        result = data["result"].toObject();
+        return KeyImageImportResult(
+            result["height"].toInt(),
+            result["spent"].toVariant().toULongLong(),
+            result["unspent"].toVariant().toULongLong()
+            );
+    }
+    return KeyImageImportResult(true, 0, "WTF happenend in WalletJsonRpc?"); // shouldn't reach here stupid!
 }
 
-QJsonObject WalletJsonRpc::refresh(unsigned int start_height)
+KeyImageImportResult WalletJsonRpc::importKeyImagesFromByteString(const std::string& data, unsigned int offset) {
+    return this->importKeyImages(this->parseKeyImages(data), offset);
+}
+
+QJsonArray WalletJsonRpc::parseKeyImages(const std::string& binaryData) {
+    QByteArray data = QByteArray::fromStdString(binaryData);
+
+    // Skip the header "Monero key image export" and version bytes
+    int offset = 22 + 3;  // Adjust if necessary
+
+    QJsonArray keyImages;
+
+    while (offset < data.size()) {
+        // Assuming key image is 32 bytes and signature is 64 bytes
+        QByteArray keyImage = data.mid(offset, 32);
+        offset += 32;
+        QByteArray signature = data.mid(offset, 64);
+        offset += 64;
+
+        QJsonObject keyImageObj;
+        keyImageObj["key_image"] = QString(keyImage.toHex());
+        keyImageObj["signature"] = QString(signature.toHex());
+
+        keyImages.append(keyImageObj);
+    }
+
+    return keyImages;
+}
+
+RefreshResult WalletJsonRpc::refresh(unsigned int start_height)
 {
     QJsonObject params;
     params["start_height"] = static_cast<int>(start_height);
 
-    return makeRequest("refresh", params);
+    QJsonObject data = makeRequest("refresh", params);
+    RefreshResult out = RefreshResult();
+    if(data.contains("result")) {
+        QJsonObject result = data["result"].toObject();
+        out.blocks_fetched = data["blocks_fetched "].toInt();
+        out.received_money = data["received_money "].toBool();
+    }
+    return out;
 }
 
-QJsonObject WalletJsonRpc::rescanSpent()
+bool WalletJsonRpc::rescanSpent()
 {
-    return makeRequest("rescan_spent", QJsonObject());
+    return makeRequest("rescan_spent", QJsonObject()).contains("result");
 }
 
-QJsonObject WalletJsonRpc::loadWallet(
+LoadWalletResult WalletJsonRpc::loadWallet(
     unsigned int restore_height,
     const QString &filename,
     const QString &address,
@@ -252,12 +443,23 @@ QJsonObject WalletJsonRpc::loadWallet(
     params["password"] = "";
     params["autosave_current"] = false;
 
-    return makeRequest("generate_from_keys", params);
+    QJsonObject data = makeRequest("generate_from_keys", params);
+    LoadWalletResult out = LoadWalletResult();
+    if(data.contains("result")) {
+        QJsonObject result = data["result"].toObject();
+        out.address = result["address"].toString();
+        out.info = result["info"].toString();
+    }
+    if(data.contains("error")) {
+        out.error = true;
+        out.error_message = data["error"].toString();
+    }
+    return out;
 }
 
-QJsonObject WalletJsonRpc::closeWallet()
+bool WalletJsonRpc::closeWallet()
 {
-    return makeRequest("close_wallet", QJsonObject());
+    return makeRequest("close_wallet", QJsonObject()).contains("result");
 }
 
 QString WalletJsonRpc::getVersion()
@@ -272,8 +474,12 @@ QString WalletJsonRpc::getVersion()
     return QString("%1.%2").arg(major).arg(minor);
 }
 
-QJsonObject WalletJsonRpc::estimateTxSizeAndWeight(unsigned int n_inputs, unsigned int n_outputs,
-                                                   unsigned int ring_size, bool rct)
+EstimateSizeWeightResult WalletJsonRpc::estimateTxSizeAndWeight(
+    unsigned int n_inputs,
+    unsigned int n_outputs,
+    unsigned int ring_size,
+    bool rct
+    )
 {
     QJsonObject params;
     params["n_inputs"] = static_cast<int>(n_inputs);
@@ -281,11 +487,21 @@ QJsonObject WalletJsonRpc::estimateTxSizeAndWeight(unsigned int n_inputs, unsign
     params["ring_size"] = static_cast<int>(ring_size);
     params["rct"] = rct;
 
-    return makeRequest("estimate_tx_size_and_weight", params);
+    QJsonObject data = makeRequest("estimate_tx_size_and_weight", params);
+    EstimateSizeWeightResult out = EstimateSizeWeightResult();
+    if(data.contains("result")) {
+        QJsonObject result = data["result"].toObject();
+        out.size = result["size"].toInt();
+        out.weight = result["weight"].toInt();
+    }
+    return out;
 }
 
 
 QString WalletJsonRpc::getFingerprint()
 {
-    return nullptr;
+    std::string addressStr = this->getAddress().address.toStdString();
+    QByteArray hash = QCryptographicHash::hash(QByteArray::fromStdString(addressStr), QCryptographicHash::Sha256);
+    QString hashHex = hash.toHex();
+    return hashHex.right(6).toUpper();
 }

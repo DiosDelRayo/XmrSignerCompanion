@@ -18,7 +18,7 @@
 #include <QNetworkAccessManager>
 #include <QCryptographicHash>
 #include <QByteArray>
-
+#include <QDateTime>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent) //, Qt::FramelessWindowHint)
@@ -61,6 +61,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui->stackedWidget, &QStackedWidget::currentChanged, this, &MainWindow::syncDotIndicator);
     connect(ui->scanViewWallet, &QrCodeScanWidget::finished, this, &MainWindow::onViewWalletScanFinished);
+    connect(ui->scanKeyImages, &QrCodeScanWidget::finished, this, &MainWindow::onKeyImagesScanFinished);
 
     connect(this, &MainWindow::walletRpcConnected, this, &MainWindow::onWalletRpcReady);
     connect(this, &MainWindow::walletRpcConnectionFailed, this, &MainWindow::onWalletRpcFailed);
@@ -187,6 +188,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
 }
 
 void MainWindow::syncDotIndicator(int index) {
+    QString outputs;
     ui->dotIndicator->setCurrentStep(index);
     switch (index) {
     case 0:
@@ -206,19 +208,27 @@ void MainWindow::syncDotIndicator(int index) {
             QApplication::exit(1);
         ui->fingerprintLabel->setText(QString("Fingerprint: %1").arg(this->getFingerprint()));
         ui->nextButton->setEnabled(false);
-        this->walletRpc->setDaemon(this->daemon_url);
+        this->walletRpc->setDaemon(this->daemon_url, true);
         this->walletSyncProgress(true);
         break;
     case 3:
         ui->titleLabel->setText(QString("Export Outputs"));
-        qDebug() << "outputs: " << this->walletRpc->exportOutputs();
+        outputs = this->walletRpc->exportSimpleOutputs();
+        qDebug() << "outputs: " << outputs;
+        // ui->outputsUR->setData("xmr-outputs", outputs.toStdString());
+        qDebug() << "outputs:binary:(local 8bit) " << QByteArray::fromHex(outputs.toLocal8Bit()).constData();
+        qDebug() << "outputs:binary:(latin 1) " << QByteArray::fromHex(outputs.toLatin1()).constData();
+        qDebug() << "outputs:binary:(local 8bit -> std::string) " << QByteArray::fromHex(outputs.toLocal8Bit()).toStdString();
+        //ui->outputsUR->setData("xmr-outputs", QByteArray::fromHex(outputs.toLocal8Bit()).toStdString());
+        //ui->outputsUR->setData("xmr-outputs", QByteArray::fromHex(outputs.toLocal8Bit()).toStdString());
+        ui->outputsUR->setData("xmr-outputs", QByteArray::fromHex("4d6f6e65726f206f7574707574206578706f72740457aab7d6f180e30a7ddd74b5019d2cc0a5ca23b3568b246bb76fed76ca0f8e6f14bf163b60743d807777312f797276d4bca1705b59170264b53065ad306a259f32f1595a6040cb493a5da1066141f558fd0e03126ab9b112873b65b026e03f70e7bd18454dd1364435a6b485dcb99d8a1274b189d69f7ac0d5a87af050e39bc18f907288cf5faff6303a51506c68703d332aac2b42a47debf9a94c55754f54aaeaa8fe3aebc3ca017da0a44c10235aab17647764413235483163566844e971f4f78ed55ec4de5f8433297008f13dad33a9e9c2e627648e8d1e981665b1e719d288ef62bdb0ec1ef68b25b9e4e06bf53bfcb510753f2d7623abf497fc515eb9f1749253ddaf7e7b3f25b5591fd18dc45423db59bebc29462ab924845f1223fda0c842f26fcf2bad1f7f4832568af24d799d0620f273c17ac0f538fcc0782eb19cdcabf541e5b2e54cd130fe6d6b583c0a6a0926175d3d8fea00c454ffe06c727fcee5c44e9466940f1a532c836b627fc0f29d415888e825e108").toStdString());
         this->walletSyncProgress(false);
-        ui->nextButton->setEnabled(false);
+        ui->nextButton->setEnabled(true);
         break;
     case 4:
         ui->titleLabel->setText(QString("Import Key Images"));
         ui->scanKeyImages->startCapture(true);
-        //ui->nextButton->setDisabled(true);
+        ui->nextButton->setDisabled(true);
         break;
     case 5:
         ui->titleLabel->setText(QString("Send XMR"));
@@ -271,6 +281,94 @@ void MainWindow::onViewWalletScanFinished(bool successful) {
     this->walletRpcManager->startWalletRPC();
 }
 
+void MainWindow::onKeyImagesScanFinished(bool successful) {
+    qDebug() << "onKeyImagesScanFinished";
+    qDebug() << "successful: " << successful << " ur type: " << ui->scanKeyImages->getURType();
+    if(!successful || ui->scanKeyImages->getURType() != "xmr-keyimage") {
+        qDebug() << "scan again...";
+        ui->scanKeyImages->startCapture(true);
+        return;
+    }
+    qDebug() << "keyimages: ur:type:" << ui->scanKeyImages->getURType();
+    std::string data = ui->scanKeyImages->getURData();
+    qDebug() << "keyimages: " << data;
+    KeyImageImportResult result = this->walletRpc->importKeyImagesFromByteString(data, this->restoreHeight);
+    qDebug() << "imported keyimages, height: " << result.height << ", spent: " << result.spent << ", unspent: " << result.unspent;
+    if(result.height >= 0) {
+        qDebug("go next");
+        this->walletRpc->rescanSpent();
+        this->walletRpc->refresh();
+        qDebug() << " balance: " << this->walletRpc->getBalance().balance;
+        //go next
+        if(result.unspent <= SPENDABLE_TRESHOLD)
+            this->sendXmrPage();
+        else
+            this->insufficientFunds();
+    }
+    qDebug("exit: onKeyImagesScanFinished()");
+}
+
+void MainWindow::insufficientFunds() {
+    // TODO: implement address browser, for now go anyway to sendXmr
+    this->sendXmrPage();
+}
+
+void MainWindow::sendXmrPage() {
+    ui->availableAmount->setText(QString("Available: %1").arg(this->relativeXmr(this->walletRpc->getBalance().unlocked_balance)));
+    int currentIndex = ui->stackedWidget->currentIndex();
+    int nextIndex = (currentIndex + 1) % ui->stackedWidget->count();
+    this->removeQrCodeScanWidgetFromUi(ui->scanKeyImages);
+    ui->stackedWidget->setCurrentIndex(nextIndex);
+    ui->dotIndicator->setCurrentStep(nextIndex);
+    ui->nextButton->setDisabled(true);
+    this->setupSendXmrInputs();
+    this->syncAvailableXmr(true);
+}
+
+void MainWindow::updateAvailableXmr() {
+    this->availableBalance = this->walletRpc->getBalance().unlocked_balance;
+        ui->availableAmount->setText(QString("Available: %1").arg(this->relativeXmr(this->availableBalance)));
+    // if this->walletRpc->getBalance().unlocked_balance and this->walletRpc->getBalance().balance differ it should be shown also in the UI that x amount is still locked...
+    checkAmount();  // Recheck amount validity with new balance
+}
+
+void MainWindow::syncAvailableXmr(bool active, int periodInMilliseconds) {
+    static QTimer* syncTimer = nullptr;
+
+    if (active) {
+        if (!syncTimer) {
+            syncTimer = new QTimer(this);
+            connect(syncTimer, &QTimer::timeout, this, &MainWindow::updateAvailableXmr);
+        }
+
+        syncTimer->start(periodInMilliseconds);
+    } else {
+        if (syncTimer) {
+            syncTimer->stop();
+            delete syncTimer;
+            syncTimer = nullptr;
+        }
+    }
+}
+
+QString MainWindow::relativeXmr(unsigned int atomic_units) {
+    const QVector<QString> units = {"pXMR", "nXMR", "µXMR", "mXMR", "XMR"};
+    const QVector<quint64> scales = {1ULL, 1000ULL, 1000000ULL, 1000000000ULL, 1000000000000ULL};
+
+    int unitIndex = 0;
+    double value = static_cast<double>(atomic_units);
+    while (unitIndex < units.size() - 1 && value >= scales[unitIndex + 1]) {
+        unitIndex++;
+    }
+    value /= scales[unitIndex];
+    int maxDecimals = 12 - (3 * unitIndex);
+    maxDecimals = qMax(0, qMin(maxDecimals, 12)); // Ensure maxDecimals is between 0 and 12
+    QString formattedValue = QString::number(value, 'f', maxDecimals);
+    formattedValue = formattedValue.remove(QRegularExpression("0+$")).remove(QRegularExpression("\\.$"));
+
+    return QString("%1 %2").arg(formattedValue).arg(units[unitIndex]);
+}
+
 QString MainWindow::getWalletFile() {
     if(this->primaryAddress == nullptr)
         return nullptr;
@@ -315,21 +413,22 @@ void MainWindow::removeWalletFiles() {
 
 void MainWindow::loadWallet() {
     emit this->loadingWallet(100000);
-    QJsonObject response = this->walletRpc->loadWallet(
+    LoadWalletResult response = this->walletRpc->loadWallet(
         this->restoreHeight,
         this->getWalletFile(),
         this->primaryAddress,
         this->privateViewKey
         );
-	qDebug() <<  response;
+    qDebug() <<  response.address << ":" << response.info;
+    qDebug() << "correct wallet: " << (response.address == this->primaryAddress);
     
-    if(response.contains("error")) {
+    if(response.error) {
         // Handle error case
-        qDebug() << "Error found in response: " << response["error"].toString();
+        qDebug() << "Error found in response: " << response.error_message;
         emit this->walletError();
-    } else if(response.contains("result")) {
+    } else {
         // Handle result case
-        qDebug() << "Result found in response: " << response["result"].toString();
+        qDebug() << "Result found in response: " << response.info;
         emit this->walletLoaded();
     }
 }
@@ -484,15 +583,51 @@ void MainWindow::walletSyncProgress(bool active, int periodInMilliseconds) {
     }
 }
 
+QString MainWindow::relativeTimeFromMilliseconds(int milliseconds) {
+    if(milliseconds > 172800000) // 2 day
+        return QString("> %1 days").arg(milliseconds / 86400000);
+    if(milliseconds > 86400000) // 1 day
+        return QString("> 1 day");
+    if(milliseconds > 7140000) // 119min
+        return QString("%1h").arg(milliseconds / 3600000);
+    if(milliseconds > 60000)
+        return QString("%1min").arg(milliseconds / 60000);
+    if(milliseconds > 1000)
+        return QString("%1s").arg(milliseconds / 1000);
+    return QString("1s");
+}
+
+QString MainWindow::relativeBlocksPerSecond(int blocks) {
+    const QVector<QString> units = {"Blocks", "kBlocks", "MBlocks", "GBlocks"};
+    double value = blocks;
+    int unitIndex = 0;
+
+    while (value >= 1000 && unitIndex < units.size() - 1) {
+        value /= 1000;
+        unitIndex++;
+    }
+
+    return QString("%1 %2/s").arg(value, 0, 'f', 2).arg(units[unitIndex]);
+}
+
 void MainWindow::updateWalletSyncProgress() {
     qDebug() << "update wallet sync progress";
+    static qint64 start = 0;
+    qint64 current_time = QDateTime::currentSecsSinceEpoch();
+    if(start == 0)
+        start = current_time;
     int networkHeight = this->daemonRpc->getHeight();
-    int walletHeight = this->walletRpc->getHeight();
-    int percentage = walletHeight * 100 / networkHeight;
+    int walletHeight = this->walletRpc->getSimpleHeight();
+    int percentage = (walletHeight - this->restoreHeight) * 100 / (networkHeight - this->restoreHeight);
     int missing = networkHeight - walletHeight;
-    qDebug() << "Height: " << walletHeight << "/" << networkHeight << " (" << percentage << "%) Missing: " << missing;
+    int avgBlocksPerSecond = (start==current_time)?0:((walletHeight - this->restoreHeight) / (current_time - start));
+    int eta = (start==current_time)?-1:(missing / avgBlocksPerSecond) * 1000;
+    qDebug() << "Height: " << walletHeight << "/" << networkHeight << " (" << percentage << "%) Missing: " << missing << " eta: " << eta;
+    ui->missingBlocks->setText(QString("Blocks missing: %1").arg(missing));
+    ui->syncETA->setText((eta!=-1)?(QString("ETA: %1").arg(this->relativeTimeFromMilliseconds(eta))):QString("ETA: calculating..."));
+    ui->avgBlockPerSecond->setText((avgBlocksPerSecond!=-1)?this->relativeBlocksPerSecond(avgBlocksPerSecond):QString(""));
     ui->syncProgressBar->setValue(percentage);
-    if(missing == 0 && networkHeight != 0) {
+    if(missing == 0 && networkHeight != 0  && networkHeight == walletHeight) {
         this->walletSyncProgress(false);
         int currentIndex = ui->stackedWidget->currentIndex();
         int nextIndex = (currentIndex + 1) % ui->stackedWidget->count();
@@ -500,6 +635,9 @@ void MainWindow::updateWalletSyncProgress() {
         ui->dotIndicator->setCurrentStep(nextIndex);
         qDebug() << "syncing wallet done";
     }
+    //this->walletRpc->refresh(this->restoreHeight);
+    BalanceResult br = this->walletRpc->getBalance();
+    qDebug() << "balance: " << br.balance << " unlocked: " << br.unlocked_balance;
 }
 
 QString MainWindow::getFingerprint() {
@@ -514,4 +652,60 @@ QString MainWindow::getFingerprint() {
 
     // Return the last 6 characters
     return hashHex.right(6).toUpper();
+}
+
+void MainWindow::setupSendXmrInputs()
+{
+    // Setup address input
+    QRegularExpression addressRx("^[1-9A-Za-z]{95}$");
+    addressValidator = new QRegularExpressionValidator(addressRx, this);
+    ui->address->setValidator(addressValidator);
+    connect(ui->address, &QLineEdit::textChanged, this, &MainWindow::checkAddress);
+
+    // Setup amount input
+    QRegularExpression amountRx("^\\d{1,12}([.,]\\d{1,12})?$");
+    amountRegexValidator = new QRegularExpressionValidator(amountRx, this);
+    ui->amount->setValidator(amountRegexValidator);
+    connect(ui->amount, &QLineEdit::textChanged, this, &MainWindow::checkAmount);
+
+    // Initial state
+    updateSendButtonState();
+}
+
+void MainWindow::checkAddress()
+{
+    bool ok = ui->address->hasAcceptableInput() && ui->address->text()[0] == QChar(NETWORK.key(network));
+    ui->address->setStyleSheet(QString("QLineEdit { background-color: white; color: black; font-size: 36px; border-radius: 35px; padding: 5px; min-height: 45px; max-height: 45px; border: 10px solid %1; }").arg(ok?"green":"transparent"));
+    updateSendButtonState();
+}
+
+void MainWindow::checkAmount()
+{
+    QString amountText = ui->amount->text();
+
+    // Replace comma with dot
+    if (ui->amount->text().contains(',')) {
+        int cursorPosition = ui->amount->cursorPosition();
+        ui->amount->setText(ui->amount->text().replace(',', '.'));
+        ui->amount->setCursorPosition(cursorPosition);
+    }
+
+    bool ok;
+    double amount = ui->amount->text().toDouble(&ok);
+    ok = ok && amount > 0 && amount <= static_cast<double>(availableBalance) / 1e12;
+    ui->amount->setStyleSheet(QString("QLineEdit { background-color: white; color: black; font-size: 36px; border-radius: 35px; padding: 5px; min-height: 45px; max-height: 45px; border: 10px solid %1; }").arg(ok?"green":"transparent"));
+    updateSendButtonState();
+}
+
+void MainWindow::updateSendButtonState()
+{
+    ui->nextButton->setEnabled(
+        !ui->amount->text().isEmpty() && ui->address->hasAcceptableInput()
+        && !ui->amount->text().isEmpty() && ui->amount->hasAcceptableInput()
+        );
+}
+
+double MainWindow::getAmountValue()
+{
+    return ui->amount->text().toDouble();
 }

@@ -20,7 +20,7 @@
 #ifndef KEEPASSX_QRCODEPRIVATE_H
 #define KEEPASSX_QRCODEPRIVATE_H
 
-#include <qrencode.h>
+#include "qrencode/qrencode.h"
 
 struct QrCodePrivate
 {

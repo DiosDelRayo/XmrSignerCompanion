@@ -2,6 +2,7 @@
 #include <QJsonDocument>
 #include <QNetworkReply>
 #include <QEventLoop>
+#include <QDateTime>
 
 DaemonJsonRpc::DaemonJsonRpc(
     QObject *parent,
@@ -64,9 +65,73 @@ QJsonObject DaemonJsonRpc::makeRequest(const QString &method, const QJsonObject 
     return response;
 }
 
-// TODO: caching???
-QJsonObject DaemonJsonRpc::getInfo() {
-    return makeRequest("get_info", QJsonObject());
+InfoResult DaemonJsonRpc::getInfo(bool cached, int acceptable_cache_seconds) {
+    static InfoResult cachedResult;
+    static qint64 lastUpdateTime = 0;
+
+    qint64 currentTime = QDateTime::currentSecsSinceEpoch();
+
+    if(cached && (currentTime - lastUpdateTime < acceptable_cache_seconds))
+        return cachedResult;
+
+    QJsonObject data = makeRequest("get_info", QJsonObject());
+    InfoResult out;
+
+    if (data.contains("result")) {
+        QJsonObject result = data["result"].toObject();
+
+        out.adjusted_time = result["adjusted_time"].toInt();
+        out.alt_blocks_count = result["alt_blocks_count"].toInt();
+        out.block_size_limit = result["block_size_limit"].toInt();
+        out.block_size_median = result["block_size_median"].toInt();
+        out.block_weight_limit = result["block_weight_limit"].toInt();
+        out.block_weight_median = result["block_weight_median"].toInt();
+        out.bootstrap_daemon_address = result["bootstrap_daemon_address"].toString();
+        out.busy_syncing = result["busy_syncing"].toBool();
+        out.credits = result["credits"].toInt();
+        out.cumulative_difficulty = result["cumulative_difficulty"].toVariant().toULongLong();
+        out.cumulative_difficulty_top64 = result["cumulative_difficulty_top64"].toVariant().toULongLong();
+        out.database_size = result["database_size"].toVariant().toULongLong();
+        out.difficulty = result["difficulty"].toVariant().toULongLong();
+        out.difficulty_top64 = result["difficulty_top64"].toVariant().toULongLong();
+        out.free_space = result["free_space"].toVariant().toULongLong();
+        out.grey_peerlist_size = result["grey_peerlist_size"].toInt();
+        out.height = result["height"].toInt();
+        out.height_without_bootstrap = result["height_without_bootstrap"].toInt();
+        out.incoming_connections_count = result["incoming_connections_count"].toInt();
+        out.mainnet = result["mainnet"].toBool();
+        out.nettype = result["nettype"].toString();
+        out.offline = result["offline"].toBool();
+        out.outgoing_connections_count = result["outgoing_connections_count"].toInt();
+        out.rpc_connections_count = result["rpc_connections_count"].toInt();
+        out.stagenet = result["stagenet"].toBool();
+        out.start_time = result["start_time"].toInt();
+        out.status = result["status"].toString();
+        out.synchronized = result["synchronized"].toBool();
+        out.target = result["target"].toInt();
+        out.target_height = result["target_height"].toInt();
+        out.testnet = result["testnet"].toBool();
+        out.top_block_hash = result["top_block_hash"].toString();
+        out.top_hash = result["top_hash"].toString();
+        out.tx_count = result["tx_count"].toInt();
+        out.tx_pool_size = result["tx_pool_size"].toInt();
+        out.untrusted = result["untrusted"].toBool();
+        out.update_available = result["update_available"].toBool();
+        out.version = result["version"].toString();
+        out.was_bootstrap_ever_used = result["was_bootstrap_ever_used"].toBool();
+        out.white_peerlist_size = result["white_peerlist_size"].toInt();
+        out.wide_cumulative_difficulty = result["wide_cumulative_difficulty"].toString();
+        out.wide_difficulty = result["wide_difficulty"].toString();
+
+        // Update cache
+        cachedResult = out;
+        lastUpdateTime = currentTime;
+    } else {
+        // Handle error case
+        qWarning() << "Error in getInfo(): No 'result' field in response";
+    }
+
+    return out;
 }
 
 QString DaemonJsonRpc::getVersion()
@@ -83,23 +148,16 @@ QString DaemonJsonRpc::getVersion()
 
 int DaemonJsonRpc::getHeight()
 {
-    QJsonObject data = this->getInfo();
-    QJsonObject resultObject = data["result"].toObject();
-    return resultObject["height"].toInt();
+    return this->getInfo(true, 15).height;
 }
 
 int DaemonJsonRpc::getLocalHeight()
 {
-    QJsonObject data = this->getInfo();
-    QJsonObject resultObject = data["result"].toObject();
-    return resultObject["height_without_bootstrap"].toInt();
+    return this->getInfo().height_without_bootstrap;
 }
 
 int DaemonJsonRpc::getSynced()
 {
-    QJsonObject data = this->getInfo();
-    QJsonObject resultObject = data["result"].toObject();
-    int local = resultObject["height_without_bootstrap"].toInt();
-    int remote = resultObject["height"].toInt();
-    return local * 100 / remote;
+    InfoResult info = this->getInfo();
+    return info.height_without_bootstrap * 100 / info.height;
 }

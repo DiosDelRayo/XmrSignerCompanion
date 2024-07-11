@@ -1,3 +1,4 @@
+
 cmake_minimum_required(VERSION 3.5)
 
 project(XmrSigner VERSION 0.1 LANGUAGES C CXX)
@@ -31,6 +32,11 @@ set(PROJECT_SOURCES
         dialog/URSettingsDialog.cpp
         dialog/URSettingsDialog.h
         dialog/URSettingsDialog.ui
+        qrcode/QrCode.cpp
+        qrcode/QrCode.h
+        qrcode/QrCode_p.h
+        qrcode/QrCodeWidget.cpp
+        qrcode/QrCodeWidget.h
         qrcode/utils/QrCodeUtils.h
         qrcode/utils/QrCodeUtils.cpp
         qrcode/QrCodeWidget.h
@@ -76,6 +82,37 @@ set(PROJECT_SOURCES
         ${TS_FILES}
 )
 
+# Add the qrencode source files
+set(QRENCODE_SOURCES
+    qrencode/qrencode.c
+    qrencode/qrinput.c
+    qrencode/qrspec.c
+    qrencode/rsecc.c
+    qrencode/mask.c
+    qrencode/split.c
+    qrencode/bitstream.c
+    qrencode/mmask.c
+    qrencode/mqrspec.c
+)
+
+# Add the qrencode headers
+set(QRENCODE_HEADERS
+    qrencode/qrencode_inner.h
+    qrencode/qrencode.h
+    qrencode/qrinput.h
+    qrencode/qrspec.h
+    qrencode/rsecc.h
+    qrencode/mask.h
+    qrencode/split.h
+    qrencode/bitstream.h
+    qrencode/mmask.h
+    qrencode/mqrspec.h
+)
+
+add_library(qrencode STATIC ${QRENCODE_SOURCES})
+target_compile_definitions(qrencode PRIVATE HAVE_CONFIG_H STATIC_IN_RELEASE=static)
+target_include_directories(qrencode PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/qrencode)
+
 add_definitions(-DZX_USE_UTF8)
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -93,7 +130,6 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         daemonjsonrpc.h daemonjsonrpc.cpp
         windowmodaldialog.h windowmodaldialog.cpp
 
-
     )
 
     qt_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
@@ -101,12 +137,16 @@ else()
     if(ANDROID)
         add_library(XmrSigner SHARED
             ${PROJECT_SOURCES}
+            ${QRENCODE_SOURCES}
+            ${QRENCODE_HEADERS}
         )
 # Define properties for Android with Qt 5 after find_package() calls as:
 #    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
     else()
         add_executable(XmrSigner
             ${PROJECT_SOURCES}
+            ${QRENCODE_SOURCES}
+            ${QRENCODE_HEADERS}
         )
     endif()
 
@@ -121,12 +161,14 @@ target_link_libraries(XmrSigner PRIVATE
     Qt${QT_VERSION_MAJOR}::Svg
     Qt${QT_VERSION_MAJOR}::SvgWidgets
     ZXing::ZXing
+    qrencode
 )
 
 target_include_directories(
     ${PROJECT_NAME}
     PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/qrencode
     ${CMAKE_CURRENT_SOURCE_DIR}/qrcode
     ${CMAKE_CURRENT_SOURCE_DIR}/qrcode/scanner
     ${CMAKE_CURRENT_SOURCE_DIR}/bcur
