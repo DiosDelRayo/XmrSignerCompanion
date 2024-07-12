@@ -216,12 +216,12 @@ void MainWindow::syncDotIndicator(int index) {
         outputs = this->walletRpc->exportSimpleOutputs();
         qDebug() << "outputs: " << outputs;
         // ui->outputsUR->setData("xmr-outputs", outputs.toStdString());
-        qDebug() << "outputs:binary:(local 8bit) " << QByteArray::fromHex(outputs.toLocal8Bit()).constData();
-        qDebug() << "outputs:binary:(latin 1) " << QByteArray::fromHex(outputs.toLatin1()).constData();
-        qDebug() << "outputs:binary:(local 8bit -> std::string) " << QByteArray::fromHex(outputs.toLocal8Bit()).toStdString();
-        //ui->outputsUR->setData("xmr-outputs", QByteArray::fromHex(outputs.toLocal8Bit()).toStdString());
-        //ui->outputsUR->setData("xmr-outputs", QByteArray::fromHex(outputs.toLocal8Bit()).toStdString());
-        ui->outputsUR->setData("xmr-outputs", QByteArray::fromHex("4d6f6e65726f206f7574707574206578706f72740457aab7d6f180e30a7ddd74b5019d2cc0a5ca23b3568b246bb76fed76ca0f8e6f14bf163b60743d807777312f797276d4bca1705b59170264b53065ad306a259f32f1595a6040cb493a5da1066141f558fd0e03126ab9b112873b65b026e03f70e7bd18454dd1364435a6b485dcb99d8a1274b189d69f7ac0d5a87af050e39bc18f907288cf5faff6303a51506c68703d332aac2b42a47debf9a94c55754f54aaeaa8fe3aebc3ca017da0a44c10235aab17647764413235483163566844e971f4f78ed55ec4de5f8433297008f13dad33a9e9c2e627648e8d1e981665b1e719d288ef62bdb0ec1ef68b25b9e4e06bf53bfcb510753f2d7623abf497fc515eb9f1749253ddaf7e7b3f25b5591fd18dc45423db59bebc29462ab924845f1223fda0c842f26fcf2bad1f7f4832568af24d799d0620f273c17ac0f538fcc0782eb19cdcabf541e5b2e54cd130fe6d6b583c0a6a0926175d3d8fea00c454ffe06c727fcee5c44e9466940f1a532c836b627fc0f29d415888e825e108").toStdString());
+        // qDebug() << "outputs:binary:(local 8bit) " << QByteArray::fromHex(outputs.toLocal8Bit()).constData();
+        // qDebug() << "outputs:binary:(latin 1) " << QByteArray::fromHex(outputs.toLatin1()).constData();
+        // qDebug() << "outputs:binary:(local 8bit -> std::string) " << QByteArray::fromHex(outputs.toLocal8Bit()).toStdString();
+        //ui->outputsUR->setData("xmr-output", QByteArray::fromHex(outputs.toLocal8Bit()).toStdString());
+        ui->outputsUR->setData("xmr-output", QByteArray::fromHex(outputs.toLocal8Bit()).toStdString());
+        //ui->outputsUR->setData("xmr-output", QByteArray::fromHex("4d6f6e65726f206f7574707574206578706f72740457aab7d6f180e30a7ddd74b5019d2cc0a5ca23b3568b246bb76fed76ca0f8e6f14bf163b60743d807777312f797276d4bca1705b59170264b53065ad306a259f32f1595a6040cb493a5da1066141f558fd0e03126ab9b112873b65b026e03f70e7bd18454dd1364435a6b485dcb99d8a1274b189d69f7ac0d5a87af050e39bc18f907288cf5faff6303a51506c68703d332aac2b42a47debf9a94c55754f54aaeaa8fe3aebc3ca017da0a44c10235aab17647764413235483163566844e971f4f78ed55ec4de5f8433297008f13dad33a9e9c2e627648e8d1e981665b1e719d288ef62bdb0ec1ef68b25b9e4e06bf53bfcb510753f2d7623abf497fc515eb9f1749253ddaf7e7b3f25b5591fd18dc45423db59bebc29462ab924845f1223fda0c842f26fcf2bad1f7f4832568af24d799d0620f273c17ac0f538fcc0782eb19cdcabf541e5b2e54cd130fe6d6b583c0a6a0926175d3d8fea00c454ffe06c727fcee5c44e9466940f1a532c836b627fc0f29d415888e825e108").toStdString());
         this->walletSyncProgress(false);
         ui->nextButton->setEnabled(true);
         break;
@@ -437,7 +437,7 @@ void MainWindow::onWalletRpcStarted() {
     qDebug() << "wallet rpc started";
     this->walletRpc = new WalletJsonRpc(this, "localhost", 18666, false);
     this->walletRpc->setAuthentication("wallet", "wallet");
-    this->checkWalletRpcConnection(10);
+    this->checkWalletRpcConnection(50);
 }
 
 void MainWindow::onWalletRpcStopped() {
@@ -607,6 +607,8 @@ QString MainWindow::relativeBlocksPerSecond(int blocks) {
         unitIndex++;
     }
 
+    if(unitIndex == 0)
+            return QString("%1 %2/s").arg(value).arg(units[unitIndex]);
     return QString("%1 %2/s").arg(value, 0, 'f', 2).arg(units[unitIndex]);
 }
 
@@ -626,7 +628,9 @@ void MainWindow::updateWalletSyncProgress() {
     ui->missingBlocks->setText(QString("Blocks missing: %1").arg(missing));
     ui->syncETA->setText((eta!=-1)?(QString("ETA: %1").arg(this->relativeTimeFromMilliseconds(eta))):QString("ETA: calculating..."));
     ui->avgBlockPerSecond->setText((avgBlocksPerSecond!=-1)?this->relativeBlocksPerSecond(avgBlocksPerSecond):QString(""));
-    ui->syncProgressBar->setValue(percentage);
+    // ui->syncProgressBar->setDisabled(percentage == 0); // fix for css glitch
+    ui->syncProgressBar->setValue((0 < percentage && percentage < 15)?14:percentage); // fix for css glitch
+    ui->syncProgressBar->setTextVisible(percentage > 14); // fix for css glitch
     if(missing == 0 && networkHeight != 0  && networkHeight == walletHeight) {
         this->walletSyncProgress(false);
         int currentIndex = ui->stackedWidget->currentIndex();
@@ -692,7 +696,7 @@ void MainWindow::checkAmount()
 
     bool ok;
     double amount = ui->amount->text().toDouble(&ok);
-    ok = ok && amount > 0 && amount <= static_cast<double>(availableBalance) / 1e12;
+    ok = ok && amount > 0 && amount <= static_cast<double>(this->availableBalance) / 1e12;
     ui->amount->setStyleSheet(QString("QLineEdit { background-color: white; color: black; font-size: 36px; border-radius: 35px; padding: 5px; min-height: 45px; max-height: 45px; border: 10px solid %1; }").arg(ok?"green":"transparent"));
     updateSendButtonState();
 }
@@ -702,10 +706,19 @@ void MainWindow::updateSendButtonState()
     ui->nextButton->setEnabled(
         !ui->amount->text().isEmpty() && ui->address->hasAcceptableInput()
         && !ui->amount->text().isEmpty() && ui->amount->hasAcceptableInput()
+        && this->getAmountValue() <= this->availableBalance
+        && this->estimateTotalTransfer() <= this->availableBalance
         );
 }
 
+unsigned int MainWindow::estimateTotalTransfer() {
+    return 0; // TODO:
+}
+
+// TODO: should be unsigned int
 double MainWindow::getAmountValue()
 {
-    return ui->amount->text().toDouble();
+    bool ok;
+    double amount = ui->amount->text().toDouble(&ok);
+    return ok?(amount * 1e12):0;
 }

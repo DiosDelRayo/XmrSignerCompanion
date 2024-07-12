@@ -99,7 +99,7 @@
     <item>
      <widget class="QStackedWidget" name="stackedWidget">
       <property name="currentIndex">
-       <number>5</number>
+       <number>7</number>
       </property>
       <widget class="QWidget" name="scanViewWalletQrPage">
        <layout class="QHBoxLayout" name="verticalLayout_2">
@@ -850,6 +850,24 @@ border: 10px solid transparent;
            </widget>
           </item>
           <item>
+           <widget class="QLabel" name="estimatedFee">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="font">
+             <font>
+              <bold>true</bold>
+             </font>
+            </property>
+            <property name="text">
+             <string>Estimated fee: 0 XMR</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item>
            <spacer name="verticalSpacer_4">
             <property name="orientation">
              <enum>Qt::Vertical</enum>
@@ -885,30 +903,12 @@ border: 10px solid transparent;
       <widget class="QWidget" name="unsignedTransactionQrPage">
        <layout class="QHBoxLayout" name="verticalLayout_8">
         <item>
-         <widget class="QLabel" name="scanImageLabel_3">
+         <widget class="URWidget" name="unsignedTransactionUR" native="true">
           <property name="minimumSize">
            <size>
             <width>200</width>
             <height>200</height>
            </size>
-          </property>
-          <property name="autoFillBackground">
-           <bool>false</bool>
-          </property>
-          <property name="styleSheet">
-           <string notr="true"/>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="pixmap">
-           <pixmap resource="icons.qrc">:/images/qr.png</pixmap>
-          </property>
-          <property name="scaledContents">
-           <bool>false</bool>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignCenter</set>
           </property>
          </widget>
         </item>
@@ -959,34 +959,12 @@ border: 10px solid transparent;
       <widget class="QWidget" name="scanSignedTransactionQrPage">
        <layout class="QHBoxLayout" name="verticalLayout_9">
         <item>
-         <widget class="QLabel" name="scanImageLabel_4">
+         <widget class="QrCodeScanWidget" name="scanSignedTransaction" native="true">
           <property name="minimumSize">
            <size>
             <width>200</width>
             <height>200</height>
            </size>
-          </property>
-          <property name="autoFillBackground">
-           <bool>false</bool>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">QLabel {
-		      background-color: white;
-		      border-radius: 25px;
-		      padding: 20px;
-			}</string>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="pixmap">
-           <pixmap resource="icons.qrc">:/icons/icons/Cam qr.svg</pixmap>
-          </property>
-          <property name="scaledContents">
-           <bool>false</bool>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignCenter</set>
           </property>
          </widget>
         </item>

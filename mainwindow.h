@@ -47,6 +47,7 @@ private:
     void checkAddress();
     void checkAmount();
     void updateSendButtonState();
+    unsigned int estimateTotalTransfer();
     double getAmountValue();
 
     int restoreHeight = 0;
