@@ -47,7 +47,6 @@ QJsonObject WalletJsonRpc::makeRequest(const QString &method, const QJsonObject 
     request["params"] = params;
 
     QUrl url = QUrl(QString("http%1://%2:%3/json_rpc").arg(m_tls?"s":"").arg(m_host).arg(m_port));
-    qDebug() << "connect to: " << url;
     QNetworkRequest networkRequest(url);
     networkRequest.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
 
@@ -123,7 +122,6 @@ BalanceResult WalletJsonRpc::getBalance(
         QJsonObject error = data["error"].toObject();
         return BalanceResult(true, error["code"].toInt(), error["message"].toString());
     }
-    qDebug() << "json:get_balance: " << data;
     if(data.contains("result")) {
         QJsonObject result = data["result"].toObject();
         out = BalanceResult(
@@ -321,6 +319,72 @@ SubmitTransferResult WalletJsonRpc::submitTransfer(const QString &tx_data_hex)
     return out;
 }
 
+TransferByTxIdResult WalletJsonRpc::getTransferByTxId(QString txid, unsigned int account_index) {
+    QJsonObject params;
+    params["txid"] = txid;
+    if(account_index != UINT_MAX)
+        params["account_index"] = static_cast<qint64>(account_index);
+
+    QJsonObject data = makeRequest("get_transfer_by_txid", params);
+
+    if(data.contains("error")) {
+        QJsonObject error = data["error"].toObject();
+        return TransferByTxIdResult(true, error["code"].toInt(), error["message"].toString());
+    }
+
+    if(data.contains("result")) {
+        TransferByTxIdResult out;
+        QJsonObject result = data["result"].toObject();
+        if(result.contains("transfer"))
+            out.transfer = this->fromTransferObject(result["transfer"].toObject());
+        if(result.contains("transfers")) {
+            QJsonArray transfers = result["transfers"].toArray();
+            for(int i=0; i<transfers.count(); i++)
+                out.transfers.append(this->fromTransferObject(transfers[i].toObject()));
+        }
+    }
+    return TransferByTxIdResult(true, 0, "WTF just happend here in WalletJsonRpc?");
+}
+
+TransferType WalletJsonRpc::strToTransferType(const QString& str) {
+    if (TRANSFER_TYPE.contains(str))
+        return TRANSFER_TYPE.value(str);
+    return TransferType::Unknown;
+}
+
+Transfer WalletJsonRpc::fromTransferObject(QJsonObject transfer) {
+
+    QJsonObject subaddrIdx = transfer["subaddr_index"].toObject();
+
+    Transfer out = Transfer(
+        transfer["address"].toString(),
+        transfer["amount"].toInteger(),
+        transfer["confirmations"].toInteger(),
+        transfer["double_spend_seen"].toBool(),
+        transfer["fee"].toInteger(),
+        transfer["height"].toInteger(),
+        transfer["locked"].toBool(),
+        transfer["payment_id"].toString(),
+        SubAddressIndex(subaddrIdx["major"].toInteger(), subaddrIdx["major"].toInteger()),
+        transfer["suggested_confirmations_threshold"].toInteger(),
+        transfer["timestamp"].toInteger(),
+        transfer["txid"].toString(),
+        strToTransferType(transfer["type"].toString()),
+        transfer["unlock_time"].toInteger()
+        );
+    if(transfer.contains("destinations")) {
+        QJsonArray jdestinations = transfer["destinations"].toArray();
+        for(int i=0;i<jdestinations.count(); i++) {
+            QJsonObject jdest = jdestinations[i].toObject();
+            out.destinations.append(Destination(jdest["amount"].toInteger(), jdest["address"].toString()));
+        }
+    }
+    QJsonArray jamounts = transfer["amounts"].toArray();
+    for(int i=0; i<jamounts.count();i++)
+        out.amounts.append(jamounts[i].toInteger());
+    return out;
+};
+
 bool WalletJsonRpc::stopWallet()
 {
     return makeRequest("stop_wallet", QJsonObject()).contains("result");
@@ -470,7 +534,6 @@ QString WalletJsonRpc::getVersion()
     int version = resultObject["version"].toInt();
     int major = (version >> 16) & 0xFF;
     int minor = version & 0xFF;
-    qDebug() << "version: " << version << " major: " << major << " minor: " << minor << " data: " << data;
     return QString("%1.%2").arg(major).arg(minor);
 }
 

@@ -2,7 +2,8 @@
 #ifndef WALLETJSONRPC_H
 #define WALLETJSONRPC_H
 
-#define HEIGHT_ERROR UINT_MAX;
+#define HEIGHT_ERROR UINT_MAX
+#define INVALID_FEE UINT_MAX
 
 #include <QObject>
 #include <QJsonObject>
@@ -223,6 +224,91 @@ struct Destination {
     Destination(unsigned int _amount, QString _address): amount(_amount), address(_address) {};
 };
 
+struct SubAddressIndex {
+    unsigned int major;
+    unsigned int minor;
+
+    SubAddressIndex() {};
+    SubAddressIndex(unsigned int _major, unsigned int _minor): major(_major), minor(_minor) {};
+};
+
+enum class TransferType {
+    In,
+    Out,
+    Pending,
+    Failed,
+    Pool,
+    Unknown
+};
+
+const QMap<QString, TransferType> TRANSFER_TYPE {
+	{ "in", TransferType::In },
+		{ "out", TransferType::Out },
+		{ "pending", TransferType::Pending },
+		{ "failed", TransferType::Failed },
+		{ "pool", TransferType::Pool }
+};
+
+struct Transfer {
+    QString address;
+    unsigned int amount;
+    QList<unsigned int> amounts;
+    unsigned int confirmations;
+    QList<Destination> destinations;
+    bool double_spend_seen;
+    unsigned int fee;
+    unsigned int height;
+    bool locked;
+    QString payment_id;
+    SubAddressIndex subaddr_index;
+    unsigned int suggested_confirmations_threshold;
+    unsigned int timestamp;
+    QString txid;
+    TransferType type;
+    unsigned int unlock_time;
+
+    Transfer() {};
+    Transfer(
+        QString _address,
+        unsigned int _amount,
+        unsigned int _confirmations,
+        bool _double_spend_seen,
+        unsigned int _fee,
+        unsigned int _height,
+        bool _locked,
+        QString _payment_id,
+        SubAddressIndex _subaddr_index,
+        unsigned int _suggested_confirmations_threshold,
+        unsigned int _timestamp,
+        QString _txid,
+        TransferType _type,
+        unsigned int _unlock_time
+        ):
+        address(_address),
+        amount(_amount),
+        confirmations(_confirmations),
+        double_spend_seen(_double_spend_seen),
+        fee(_fee),
+        height(_height),
+        locked(_locked),
+        payment_id(_payment_id),
+        subaddr_index(_subaddr_index),
+        suggested_confirmations_threshold(_suggested_confirmations_threshold),
+        timestamp(_timestamp),
+        txid(_txid),
+        type(_type),
+        unlock_time(_unlock_time)
+        {};
+};
+
+struct TransferByTxIdResult: Error {
+    Transfer transfer;
+    QList<Transfer> transfers;
+
+    TransferByTxIdResult() {}
+    TransferByTxIdResult(bool _error, int _code, QString _error_message): Error(_error_message, _code, _error) {}
+};
+
 class WalletJsonRpc : public QObject
 {
     Q_OBJECT
@@ -290,6 +376,9 @@ public:
         const QJsonArray &signed_key_images,
         unsigned int offset = -1
         );
+
+    TransferByTxIdResult getTransferByTxId(QString txid, unsigned int account_index = UINT_MAX);
+
     KeyImageImportResult importKeyImagesFromByteString(
         const std::string& data,
         unsigned int offset = -1
@@ -311,10 +400,12 @@ public:
         bool rct
         );
     QString getFingerprint();
+    TransferType strToTransferType(const QString& str);
 
 private:
     QJsonObject makeRequest(const QString &method, const QJsonObject &params);
     QJsonArray parseKeyImages(const std::string& binaryData);
+    Transfer fromTransferObject(QJsonObject transfer);
     QString m_host;
     int m_port;
     bool m_tls;
