@@ -44,7 +44,6 @@ QJsonObject DaemonJsonRpc::makeRequest(const QString &method, const QJsonObject 
     request["params"] = params;
 
     QUrl url = QUrl(QString("http%1://%2:%3/json_rpc").arg(m_tls?"s":"").arg(m_host).arg(m_port));
-    qDebug() << "connect to: " << url;
     QNetworkRequest networkRequest(url);
     networkRequest.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
 
