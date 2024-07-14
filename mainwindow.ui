@@ -99,7 +99,7 @@
     <item>
      <widget class="QStackedWidget" name="stackedWidget">
       <property name="currentIndex">
-       <number>7</number>
+       <number>8</number>
       </property>
       <widget class="QWidget" name="scanViewWalletQrPage">
        <layout class="QHBoxLayout" name="verticalLayout_2">
@@ -903,6 +903,22 @@ border: 10px solid transparent;
       <widget class="QWidget" name="unsignedTransactionQrPage">
        <layout class="QHBoxLayout" name="verticalLayout_8">
         <item>
+         <spacer name="horizontalSpacer_24">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Minimum</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
          <widget class="URWidget" name="unsignedTransactionUR" native="true">
           <property name="minimumSize">
            <size>
@@ -916,6 +932,9 @@ border: 10px solid transparent;
          <spacer name="horizontalSpacer_10">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Minimum</enum>
           </property>
           <property name="sizeHint" stdset="0">
            <size>
@@ -945,6 +964,9 @@ border: 10px solid transparent;
          <spacer name="horizontalSpacer_11">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Minimum</enum>
           </property>
           <property name="sizeHint" stdset="0">
            <size>
@@ -1048,7 +1070,7 @@ border: 10px solid transparent;
              </spacer>
             </item>
             <item>
-             <widget class="QLabel" name="sending_status">
+             <widget class="QLabel" name="sendingStatus">
               <property name="font">
                <font>
                 <pointsize>28</pointsize>
@@ -1122,6 +1144,9 @@ border: 10px solid transparent;
               </item>
               <item>
                <widget class="QLabel" name="done">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
                 <property name="minimumSize">
                  <size>
                   <width>64</width>
@@ -1168,6 +1193,48 @@ border: 10px solid transparent;
                </spacer>
               </item>
              </layout>
+            </item>
+            <item>
+             <spacer name="verticalSpacer_20">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Minimum</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QLabel" name="txids">
+              <property name="text">
+               <string>Tx Ids:</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="verticalSpacer_21">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Minimum</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
             </item>
            </layout>
           </item>
