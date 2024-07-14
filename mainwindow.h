@@ -5,6 +5,7 @@
 #include <QString>
 #include <QMainWindow>
 #include <QTemporaryDir>
+#include <QRegularExpression>
 #include <QRegularExpressionValidator>
 #include "daemonjsonrpc.h"
 #include "walletrpcmanager.h"
@@ -29,9 +30,12 @@ protected:
     void closeEvent(QCloseEvent *event) override;
 
 private:
-    bool checkLogic();
+    bool checkLogic(int currentScreen, int nextScreen);
     QString primaryAddress = nullptr;
     QString privateViewKey = nullptr;
+    QString unsignedTransaction = nullptr;
+    bool lockedUnsignedTransaction = false;
+    QList<QString> txIds;
     QString daemon_url = nullptr;
     QTemporaryDir *tempDir = nullptr;
     QRegularExpressionValidator *nodeAddressValidator;
@@ -47,8 +51,12 @@ private:
     void checkAddress();
     void checkAmount();
     void updateSendButtonState();
+    void next();
+    void previous();
+    void transactionsProgress(bool active, int periodInMilliseconds = 5000);
+    void renderTxProgress();
     unsigned int estimateTotalTransfer();
-    double getAmountValue();
+    unsigned int getAmountValue();
 
     int restoreHeight = 0;
     WalletRpcManager *walletRpcManager = nullptr;
@@ -64,7 +72,6 @@ private:
     void removeWalletFiles();
     void checkNodeUrl();
     void updateWalletSyncProgress();
-    void sendXmrPage();
     void updateAvailableXmr();
     void syncAvailableXmr(bool active, int periodInMilliseconds = 5000);
     void insufficientFunds(); // should give access to the addresses...
@@ -84,6 +91,12 @@ private:
         {"mainnet", 18081},
         {"testnet", 28081},
         {"stagenet", 38081}
+    };
+
+    const QMap<QString, QRegularExpression> VALID_NETWORK_ADDRESS = {
+        {"mainnet", QRegularExpression("^[48][1-9A-Za-z]{94}$")},
+        {"testnet", QRegularExpression("^[ABab][1-9A-Za-z]{94}$")},
+        {"stagenet", QRegularExpression("^[57][1-9A-Za-z]{94}$")}
     };
 
     QString network = NETWORK['4'];
@@ -108,6 +121,7 @@ private slots:
     void syncDotIndicator(int index);
     void onViewWalletScanFinished(bool successful);
     void onKeyImagesScanFinished(bool successful);
+    void onSignedTransactionScanFinished(bool successful);
     void onWalletRpcStarted();
     void onWalletRpcStopped();
     void onWalletRpcError();
@@ -118,4 +132,13 @@ private slots:
     void onWalletError();
     void onShutdown();
 };
+
+class PortValidator : public QValidator
+{
+public:
+    PortValidator(QObject *parent = nullptr);
+
+    State validate(QString &input, int &pos) const override;
+};
+
 #endif // MAINWINDOW_H

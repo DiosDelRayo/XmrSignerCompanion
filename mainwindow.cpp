@@ -6,7 +6,6 @@
 #include <QDebug>
 #include <QJsonDocument>
 #include <QJsonParseError>
-#include <QRegularExpression>
 #include <QUrlQuery>
 #include <QTimer>
 #include <QDir>
@@ -40,28 +39,17 @@ MainWindow::MainWindow(QWidget *parent)
     ui->nextButton->setDisabled(true);
 
     connect(ui->nextButton, &QPushButton::clicked, this, [this]() {
-        // Check logic before advancing to next step
-        if (checkLogic()) {
-            int currentIndex = ui->stackedWidget->currentIndex();
-            int nextIndex = (currentIndex + 1) % ui->stackedWidget->count(); // Loop back to the first widget if at the last
-            ui->stackedWidget->setCurrentIndex(nextIndex);
-            ui->dotIndicator->setCurrentStep(nextIndex); // Sync QDotProgressIndicator
-        }
+        this->next();
     });
 
     connect(ui->prevButton, &QPushButton::clicked, this, [this]() {
-        // Check logic before going back to previous step
-        if (checkLogic()) {
-            int currentIndex = ui->stackedWidget->currentIndex();
-            int prevIndex = (ui->stackedWidget->count() + currentIndex - 1) % ui->stackedWidget->count(); // Loop to last widget if at the first
-            ui->stackedWidget->setCurrentIndex(prevIndex);
-            ui->dotIndicator->setCurrentStep(prevIndex); // Sync QDotProgressIndicator
-        }
+        this->previous();
     });
 
     connect(ui->stackedWidget, &QStackedWidget::currentChanged, this, &MainWindow::syncDotIndicator);
     connect(ui->scanViewWallet, &QrCodeScanWidget::finished, this, &MainWindow::onViewWalletScanFinished);
     connect(ui->scanKeyImages, &QrCodeScanWidget::finished, this, &MainWindow::onKeyImagesScanFinished);
+    connect(ui->scanSignedTransaction, &QrCodeScanWidget::finished, this, &MainWindow::onSignedTransactionScanFinished);
 
     connect(this, &MainWindow::walletRpcConnected, this, &MainWindow::onWalletRpcReady);
     connect(this, &MainWindow::walletRpcConnectionFailed, this, &MainWindow::onWalletRpcFailed);
@@ -72,9 +60,26 @@ MainWindow::MainWindow(QWidget *parent)
     connect(this, &MainWindow::invalidQr, ui->scanViewWallet, &QrCodeScanWidget::onFrameStateError);
     connect(this, &MainWindow::loadingWalletRpc, ui->scanViewWallet, &QrCodeScanWidget::onFrameStateProcessing);
     connect(this, &MainWindow::loadingWallet, ui->scanViewWallet, &QrCodeScanWidget::onFrameStateProcessing);
+}
 
-    qDebug() << "Dot Indicator size:" << ui->dotIndicator->size();
-    qDebug() << "Dot Indicator is visible:" << ui->dotIndicator->isVisible();
+void MainWindow::next() {
+    int currentIndex = ui->stackedWidget->currentIndex();
+    int nextIndex = (currentIndex + 1) % ui->stackedWidget->count(); // Loop back to the first widget if at the last
+    // Check logic before advancing to next step
+    if (checkLogic(currentIndex, nextIndex)) {
+        ui->stackedWidget->setCurrentIndex(nextIndex);
+        // ui->dotIndicator->setCurrentStep(nextIndex); // Sync QDotProgressIndicator
+    }
+}
+
+void MainWindow::previous() {
+    int currentIndex = ui->stackedWidget->currentIndex();
+    int prevIndex = (ui->stackedWidget->count() + currentIndex - 1) % ui->stackedWidget->count(); // Loop to last widget if at the first
+    // Check logic before going back to previous step
+    if (checkLogic(currentIndex, prevIndex)) {
+        ui->stackedWidget->setCurrentIndex(prevIndex);
+        ui->dotIndicator->setCurrentStep(prevIndex); // Sync QDotProgressIndicator
+    }
 }
 
 void MainWindow::setupNodeInputs()
@@ -103,9 +108,12 @@ void MainWindow::setupNodeInputs()
     connect(lookupTimer, &QTimer::timeout, this, &MainWindow::checkNodeAddress);
 
     // Setup port input
+    /*
     QRegularExpression portRx("^([1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$");
     nodePortValidator = new QRegularExpressionValidator(portRx, this);
     ui->nodePortEdit->setValidator(nodePortValidator);
+    */
+    ui->nodePortEdit->setValidator(new PortValidator(ui->nodePortEdit));
 
     connect(ui->nodePortEdit, &QLineEdit::textChanged, this, &MainWindow::checkNodePort);
 }
@@ -189,7 +197,10 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
 void MainWindow::syncDotIndicator(int index) {
     QString outputs;
+
+    qDebug() << "set current step: " << index;
     ui->dotIndicator->setCurrentStep(index);
+
     switch (index) {
     case 0:
         ui->titleLabel->setText(QString("Import View Only Wallet"));
@@ -215,13 +226,7 @@ void MainWindow::syncDotIndicator(int index) {
         ui->titleLabel->setText(QString("Export Outputs"));
         outputs = this->walletRpc->exportSimpleOutputs();
         qDebug() << "outputs: " << outputs;
-        // ui->outputsUR->setData("xmr-outputs", outputs.toStdString());
-        // qDebug() << "outputs:binary:(local 8bit) " << QByteArray::fromHex(outputs.toLocal8Bit()).constData();
-        // qDebug() << "outputs:binary:(latin 1) " << QByteArray::fromHex(outputs.toLatin1()).constData();
-        // qDebug() << "outputs:binary:(local 8bit -> std::string) " << QByteArray::fromHex(outputs.toLocal8Bit()).toStdString();
-        //ui->outputsUR->setData("xmr-output", QByteArray::fromHex(outputs.toLocal8Bit()).toStdString());
         ui->outputsUR->setData("xmr-output", QByteArray::fromHex(outputs.toLocal8Bit()).toStdString());
-        //ui->outputsUR->setData("xmr-output", QByteArray::fromHex("4d6f6e65726f206f7574707574206578706f72740457aab7d6f180e30a7ddd74b5019d2cc0a5ca23b3568b246bb76fed76ca0f8e6f14bf163b60743d807777312f797276d4bca1705b59170264b53065ad306a259f32f1595a6040cb493a5da1066141f558fd0e03126ab9b112873b65b026e03f70e7bd18454dd1364435a6b485dcb99d8a1274b189d69f7ac0d5a87af050e39bc18f907288cf5faff6303a51506c68703d332aac2b42a47debf9a94c55754f54aaeaa8fe3aebc3ca017da0a44c10235aab17647764413235483163566844e971f4f78ed55ec4de5f8433297008f13dad33a9e9c2e627648e8d1e981665b1e719d288ef62bdb0ec1ef68b25b9e4e06bf53bfcb510753f2d7623abf497fc515eb9f1749253ddaf7e7b3f25b5591fd18dc45423db59bebc29462ab924845f1223fda0c842f26fcf2bad1f7f4832568af24d799d0620f273c17ac0f538fcc0782eb19cdcabf541e5b2e54cd130fe6d6b583c0a6a0926175d3d8fea00c454ffe06c727fcee5c44e9466940f1a532c836b627fc0f29d415888e825e108").toStdString());
         this->walletSyncProgress(false);
         ui->nextButton->setEnabled(true);
         break;
@@ -231,19 +236,94 @@ void MainWindow::syncDotIndicator(int index) {
         ui->nextButton->setDisabled(true);
         break;
     case 5:
+        ui->availableAmount->setText(QString("Available: %1").arg(this->relativeXmr(this->walletRpc->getBalance().unlocked_balance)));
+        this->removeQrCodeScanWidgetFromUi(ui->scanKeyImages);
+        this->setupSendXmrInputs();
+        this->syncAvailableXmr(true);
         ui->titleLabel->setText(QString("Send XMR"));
-        ui->nextButton->setEnabled(true);
+        ui->nextButton->setDisabled(true);
+        this->lockedUnsignedTransaction = false;
+        this->unsignedTransaction = nullptr;
         break;
     case 6:
+        if(!this->lockedUnsignedTransaction || this->unsignedTransaction== nullptr || this->unsignedTransaction.isEmpty())
+            return;
+        this->syncAvailableXmr(false);
+        qDebug() << "send unsigned tx: " << this->unsignedTransaction;
+        ui->unsignedTransactionUR->setData("xmr-txunsigned",QByteArray::fromHex(this->unsignedTransaction.toLocal8Bit()).toStdString());
         ui->titleLabel->setText(QString("Export Unsigned Transaction"));
+        ui->nextButton->setEnabled(true);
         break;
     case 7:
-        ui->titleLabel->setText(QString("Import Signed Transaction"));
+        ui->titleLabel->setText("Import Signed Transaction");
+        ui->scanSignedTransaction->startCapture(true);
+        ui->nextButton->setDisabled(true);
+        break;
+    case 8:
+        ui->titleLabel->setText("");
+        this->renderTxProgress();
+        ui->txids->setText(QString("Tx Id's: %1").arg(this->txIds.join(", ")));
+        ui->blocks->setVisible(false);
+        ui->nextButton->setDisabled(true);
         break;
     default:
-        ui->titleLabel->setText(QString(""));
+        ui->titleLabel->setText("");
         ui->nextButton->setDisabled(true);
     }
+}
+
+void MainWindow::transactionsProgress(bool active, int periodInMilliseconds) {
+    static QTimer* syncTimer = nullptr;
+
+    if (active) {
+        if (!syncTimer) {
+            syncTimer = new QTimer(this);
+            connect(syncTimer, &QTimer::timeout, this, &MainWindow::renderTxProgress);
+        }
+
+        syncTimer->start(periodInMilliseconds);
+    } else {
+        if (syncTimer) {
+            syncTimer->stop();
+            delete syncTimer;
+            syncTimer = nullptr;
+        }
+    }
+};
+
+void MainWindow::renderTxProgress() {
+    TransferByTxIdResult result = this->walletRpc->getTransferByTxId(this->txIds.first());
+    if(result.error) {
+        qDebug() << "error: " << result.error_message;
+        return;
+    }
+    switch (result.transfer.type) {
+    case TransferType::Pending:
+    ui->sendingStatus->setText("Sending...");
+        break;
+    case TransferType::Pool:
+    ui->sendingStatus->setText("Waiting for first confirmation...");
+        break;
+    case TransferType::Out:
+        if(result.transfer.confirmations >= 10) {
+            ui->sendingStatus->setText(QString("Done! The receiver can now spend the %1.").arg(this->relativeXmr(result.transfer.amount)));
+            break;
+        }
+    ui->sendingStatus->setText("Waiting for first confirmation...");
+        break;
+    default:
+        break;
+    }
+    ui->done->setVisible(result.transfer.confirmations > 0); // set visible on first confirmation
+    ui->done->setEnabled(result.transfer.confirmations >= 10); // on 10th confirmation
+    const static QList<TransferType> ACCEPTABLE_TRANSFER_TYPES = {
+        TransferType::Out,
+        TransferType::Pending,
+        TransferType::Pool
+    };
+    ui->blocks->setVisible(ACCEPTABLE_TRANSFER_TYPES.contains(result.transfer.type)); // set visible with tx in mempool)
+    ui->blocks->setText(QString("%1/%2").arg(result.transfer.confirmations).arg(10));
+    ui->nextButton->setEnabled(result.transfer.confirmations > 0); // set enabled on first confirmation;
 }
 
 void MainWindow::checkNodeUrl() {
@@ -258,7 +338,14 @@ void MainWindow::checkNodeUrl() {
     //this->walletRpc->setDaemon(url.toString(), NetworkChecker::isDomainOrIpLocal(url.host()));
 }
 
-bool MainWindow::checkLogic() {
+bool MainWindow::checkLogic(int currentIndex, int nextIndex) {
+    if(nextIndex == 6) {
+        this->lockedUnsignedTransaction = true;
+        if(this->unsignedTransaction != nullptr && !this->unsignedTransaction.isEmpty())
+            return true;
+        this->lockedUnsignedTransaction = false;
+        return false;
+    }
     return true; // Return true if logic is OK to proceed, otherwise return false
 }
 
@@ -292,7 +379,7 @@ void MainWindow::onKeyImagesScanFinished(bool successful) {
     qDebug() << "keyimages: ur:type:" << ui->scanKeyImages->getURType();
     std::string data = ui->scanKeyImages->getURData();
     qDebug() << "keyimages: " << data;
-    KeyImageImportResult result = this->walletRpc->importKeyImagesFromByteString(data, this->restoreHeight);
+    KeyImageImportResult result = this->walletRpc->importKeyImagesFromByteString(QByteArray::fromStdString(data).toHex().toStdString(), this->restoreHeight);
     qDebug() << "imported keyimages, height: " << result.height << ", spent: " << result.spent << ", unspent: " << result.unspent;
     if(result.height >= 0) {
         qDebug("go next");
@@ -301,28 +388,42 @@ void MainWindow::onKeyImagesScanFinished(bool successful) {
         qDebug() << " balance: " << this->walletRpc->getBalance().balance;
         //go next
         if(result.unspent <= SPENDABLE_TRESHOLD)
-            this->sendXmrPage();
+            this->next();
         else
             this->insufficientFunds();
     }
     qDebug("exit: onKeyImagesScanFinished()");
 }
 
-void MainWindow::insufficientFunds() {
-    // TODO: implement address browser, for now go anyway to sendXmr
-    this->sendXmrPage();
+void MainWindow::onSignedTransactionScanFinished(bool successful) {
+    qDebug() << "onSignedTransactionScanFinished";
+    qDebug() << "successful: " << successful << " ur type: " << ui->scanSignedTransaction->getURType();
+
+    if(!successful || ui->scanSignedTransaction->getURType() != "xmr-txsigned") {
+        qDebug() << "scan again...";
+        ui->scanSignedTransaction->startCapture(true);
+        return;
+    }
+    qDebug() << "signed tx: ur:type:" << ui->scanSignedTransaction->getURType();
+    std::string data = ui->scanSignedTransaction->getURData();
+    qDebug() << "signed tx: " << data;
+    SubmitTransferResult result = this->walletRpc->submitTransfer(QByteArray::fromStdString(data).toHex());
+    qDebug() << "submit error: " << result.error << (result.error?(QString("(%1)").arg(result.error_message)):"") << " tx ids: " << result.tx_hash_list;
+    // on success next
+    if(!result.error && !result.tx_hash_list.isEmpty()) {
+        this->txIds.fromList(result.tx_hash_list);
+        this->walletRpc->rescanSpent();
+        this->walletRpc->refresh();
+        qDebug() << " balance: " << this->walletRpc->getBalance().balance;
+        //go next
+            this->next();
+    }
+    qDebug("exit: onSignedTransactionScanFinished();");
 }
 
-void MainWindow::sendXmrPage() {
-    ui->availableAmount->setText(QString("Available: %1").arg(this->relativeXmr(this->walletRpc->getBalance().unlocked_balance)));
-    int currentIndex = ui->stackedWidget->currentIndex();
-    int nextIndex = (currentIndex + 1) % ui->stackedWidget->count();
-    this->removeQrCodeScanWidgetFromUi(ui->scanKeyImages);
-    ui->stackedWidget->setCurrentIndex(nextIndex);
-    ui->dotIndicator->setCurrentStep(nextIndex);
-    ui->nextButton->setDisabled(true);
-    this->setupSendXmrInputs();
-    this->syncAvailableXmr(true);
+void MainWindow::insufficientFunds() {
+    // TODO: implement address browser, for now go anyway to sendXmr
+    this->next();
 }
 
 void MainWindow::updateAvailableXmr() {
@@ -662,7 +763,7 @@ void MainWindow::setupSendXmrInputs()
 {
     // Setup address input
     QRegularExpression addressRx("^[1-9A-Za-z]{95}$");
-    addressValidator = new QRegularExpressionValidator(addressRx, this);
+    addressValidator = new QRegularExpressionValidator(VALID_NETWORK_ADDRESS[this->network], this);
     ui->address->setValidator(addressValidator);
     connect(ui->address, &QLineEdit::textChanged, this, &MainWindow::checkAddress);
 
@@ -678,15 +779,12 @@ void MainWindow::setupSendXmrInputs()
 
 void MainWindow::checkAddress()
 {
-    bool ok = ui->address->hasAcceptableInput() && ui->address->text()[0] == QChar(NETWORK.key(network));
-    ui->address->setStyleSheet(QString("QLineEdit { background-color: white; color: black; font-size: 36px; border-radius: 35px; padding: 5px; min-height: 45px; max-height: 45px; border: 10px solid %1; }").arg(ok?"green":"transparent"));
+    ui->address->setStyleSheet(QString("QLineEdit { background-color: white; color: black; font-size: 36px; border-radius: 35px; padding: 5px; min-height: 45px; max-height: 45px; border: 10px solid %1; }").arg(ui->address->hasAcceptableInput()?"green":"transparent"));
     updateSendButtonState();
 }
 
 void MainWindow::checkAmount()
 {
-    QString amountText = ui->amount->text();
-
     // Replace comma with dot
     if (ui->amount->text().contains(',')) {
         int cursorPosition = ui->amount->cursorPosition();
@@ -703,22 +801,57 @@ void MainWindow::checkAmount()
 
 void MainWindow::updateSendButtonState()
 {
+    unsigned int estimatedFee = this->estimateTotalTransfer();
     ui->nextButton->setEnabled(
-        !ui->amount->text().isEmpty() && ui->address->hasAcceptableInput()
-        && !ui->amount->text().isEmpty() && ui->amount->hasAcceptableInput()
+        this->getAmountValue() != 0
+        &&!ui->amount->text().isEmpty()
+        && ui->address->hasAcceptableInput()
+        && !ui->amount->text().isEmpty()
+        && ui->amount->hasAcceptableInput()
         && this->getAmountValue() <= this->availableBalance
-        && this->estimateTotalTransfer() <= this->availableBalance
+        && (estimatedFee != INVALID_FEE)
+        && estimatedFee <= this->availableBalance
         );
+
+    if(estimatedFee != INVALID_FEE) {
+        ui->estimatedFee->setText(QString("Estimated fee: %1").arg(this->relativeXmr(estimatedFee)));
+        ui->estimatedFee->setEnabled(true);
+    } else {
+        ui->estimatedFee->setText("");
+        ui->estimatedFee->setEnabled(true);
+    }
 }
 
 unsigned int MainWindow::estimateTotalTransfer() {
-    return 0; // TODO:
+    if(this->getAmountValue() <= 0)
+        return INVALID_FEE;
+    if(this->lockedUnsignedTransaction)
+        return INVALID_FEE;
+    QList<Destination> destinations;
+    destinations.append(Destination(this->getAmountValue(), (!ui->address->text().isEmpty()&&ui->address->hasAcceptableInput())?ui->address->text():this->primaryAddress));
+    TransferResult tr = this->walletRpc->transfer(destinations);
+    if(!tr.error) {
+        if(!this->lockedUnsignedTransaction)
+                this->unsignedTransaction = tr.unsigned_txset;
+        return tr.fee;
+    }
+    if(!this->lockedUnsignedTransaction)
+        this->unsignedTransaction = nullptr;
+    return INVALID_FEE;
 }
 
-// TODO: should be unsigned int
-double MainWindow::getAmountValue()
+unsigned int MainWindow::getAmountValue()
 {
     bool ok;
     double amount = ui->amount->text().toDouble(&ok);
-    return ok?(amount * 1e12):0;
+    return ok ? static_cast<unsigned int>(amount * 1e12) : 0;
+}
+
+PortValidator::PortValidator(QObject *parent) : QValidator(parent) {}
+
+QValidator::State PortValidator::validate(QString &input, int &pos) const {
+    Q_UNUSED(pos);
+
+    int port = input.toInt();
+    return (input.isEmpty() || (port >= 1 && port <= 65535)) ? QValidator::Acceptable : QValidator::Invalid;
 }
