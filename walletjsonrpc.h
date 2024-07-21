@@ -373,7 +373,7 @@ public:
     ExportOutputsResult exportOutputs(bool all = true);
     QString exportSimpleOutputs(bool all = true);
     KeyImageImportResult importKeyImages(
-        const QJsonArray &signed_key_images,
+        const QJsonArray &encrypted_key_images_blob,
         unsigned int offset = -1
         );
 

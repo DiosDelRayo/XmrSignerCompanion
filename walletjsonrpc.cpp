@@ -416,16 +416,16 @@ QString WalletJsonRpc::exportSimpleOutputs(bool all)
     return eor.outputs_data_hex;
 }
 
-KeyImageImportResult WalletJsonRpc::importKeyImages(const QJsonArray &signed_key_images, unsigned int offset)
+KeyImageImportResult WalletJsonRpc::importKeyImages(const QJsonArray &encrypted_key_images_blob, unsigned int offset)
 {
-    qDebug() << "rpc:import_key_images: " << signed_key_images << " offset: " << offset;
+    qDebug() << "rpc:import_key_images: " << encrypted_key_images_blob << " offset: " << offset;
     QJsonObject params;
     if(offset != 0)
             params["offset"] = static_cast<int>(offset);
-    params["signed_key_images"] = signed_key_images;
+    params["encrypted_key_images_blob"] = encrypted_key_images_blob;
 
     QJsonObject result;
-    QJsonObject data = makeRequest("import_key_images", params);
+    QJsonObject data = makeRequest("import_encrypted_key_images", params);
     qDebug() << "rpc:import_key_images: result: " << data;
     if(data.contains("error")) {
         QJsonObject error = data["error"].toObject();
