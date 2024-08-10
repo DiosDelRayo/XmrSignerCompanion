@@ -22,7 +22,7 @@ QrCodeScanWidget::QrCodeScanWidget(QWidget *parent)
 {
     ui->setupUi(this);
     
-    int framePadding = 5; // Adjust this value as needed
+    int framePadding = 14; // Adjust this value as needed
     ui->verticalLayout->setContentsMargins(framePadding, framePadding, framePadding, framePadding);
 
     this->setWindowTitle("Scan QR code");

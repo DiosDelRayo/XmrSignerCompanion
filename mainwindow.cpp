@@ -2,6 +2,7 @@
 #include "qrcode/scanner/QrCodeScanWidget.h"
 #include "./ui_mainwindow.h"
 #include "networkchecker.h"
+#include <QMessageBox>
 #include <QVBoxLayout>
 #include <QDebug>
 #include <QJsonDocument>
@@ -20,12 +21,11 @@
 #include <QDateTime>
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent) //, Qt::FramelessWindowHint)
+    : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
     connect(QCoreApplication::instance(), &QCoreApplication::aboutToQuit, this, &MainWindow::onShutdown);
     connect(this, &MainWindow::shutdownRequested, this, &MainWindow::onShutdown);
-    //setAttribute(Qt::WA_TranslucentBackground);
     ui->setupUi(this);
     setupNodeInputs();
 
@@ -102,19 +102,12 @@ void MainWindow::setupNodeInputs()
     ui->nodeAddressEdit->setValidator(this->nodeAddressValidator);
     lookupTimer = new QTimer(this);
     lookupTimer->setSingleShot(true);
-    lookupTimer->setInterval(500); // 500ms delay
+    lookupTimer->setInterval(500);
 
     connect(ui->nodeAddressEdit, &QLineEdit::textChanged, this, &MainWindow::checkNodeAddress);
     connect(lookupTimer, &QTimer::timeout, this, &MainWindow::checkNodeAddress);
 
-    // Setup port input
-    /*
-    QRegularExpression portRx("^([1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$");
-    nodePortValidator = new QRegularExpressionValidator(portRx, this);
-    ui->nodePortEdit->setValidator(nodePortValidator);
-    */
     ui->nodePortEdit->setValidator(new PortValidator(ui->nodePortEdit));
-
     connect(ui->nodePortEdit, &QLineEdit::textChanged, this, &MainWindow::checkNodePort);
 }
 
@@ -146,9 +139,11 @@ void MainWindow::checkNodePort()
 
     // TODO: in tristate we should http and https...
     QString url = QString("http%1://%2:%3/json_rpc")
-                      .arg(ui->nodeTls->isChecked() ? "s" : "")
-                      .arg(host)
-                      .arg(port);
+                        .arg(
+                          ui->nodeTls->isChecked() ? "s" : "",
+                          host,
+                          port
+                        );
     qDebug() << "check node url: " << url;
 
     QNetworkAccessManager *manager = new QNetworkAccessManager(this);
@@ -327,7 +322,7 @@ void MainWindow::renderTxProgress() {
 }
 
 void MainWindow::checkNodeUrl() {
-    QUrl url = QUrl(QString("%1:%2").arg(ui->nodeAddressEdit->text()).arg(ui->nodePortEdit->text()));
+    QUrl url = QUrl(QString("%1:%2").arg(ui->nodeAddressEdit->text(), ui->nodePortEdit->text()));
     if(!url.isValid()) {
         // mark invalid
         ui->nextButton->setDisabled(true);
@@ -409,16 +404,15 @@ void MainWindow::onSignedTransactionScanFinished(bool successful) {
     qDebug() << "signed tx: " << data;
     SubmitTransferResult result = this->walletRpc->submitTransfer(QByteArray::fromStdString(data).toHex());
     qDebug() << "submit error: " << result.error << (result.error?(QString("(%1)").arg(result.error_message)):"") << " tx ids: " << result.tx_hash_list;
-    // on success next
-    if(!result.error && !result.tx_hash_list.isEmpty()) {
-        this->txIds.fromList(result.tx_hash_list);
-        this->walletRpc->rescanSpent();
-        this->walletRpc->refresh();
-        qDebug() << " balance: " << this->walletRpc->getBalance().balance;
-        //go next
-            this->next();
+    if(result.error || result.tx_hash_list.isEmpty()) {
+        QMessageBox::critical(this, "Transaction failed", QString("Wallet error: %1.").arg(result.error_message));
     }
-    qDebug("exit: onSignedTransactionScanFinished();");
+    qDebug("success: onSignedTransactionScanFinished();");
+    this->txIds.fromList(result.tx_hash_list);
+    this->walletRpc->rescanSpent();
+    this->walletRpc->refresh();
+    qDebug() << " balance: " << this->walletRpc->getBalance().balance;
+    this->next();
 }
 
 void MainWindow::insufficientFunds() {
@@ -467,7 +461,7 @@ QString MainWindow::relativeXmr(unsigned int atomic_units) {
     QString formattedValue = QString::number(value, 'f', maxDecimals);
     formattedValue = formattedValue.remove(QRegularExpression("0+$")).remove(QRegularExpression("\\.$"));
 
-    return QString("%1 %2").arg(formattedValue).arg(units[unitIndex]);
+    return QString("%1 %2").arg(formattedValue, units[unitIndex]);
 }
 
 QString MainWindow::getWalletFile() {
@@ -496,16 +490,6 @@ QString MainWindow::getWalletPath() {
 
 void MainWindow::removeWalletFiles() {
     qDebug() << "removeWalletFiles";
-    /* seems we don't need it and can relay on auto remove
-    auto files = {this->getWalletPath(), QString(this->getWalletPath()) + ".key"};
-    for(const auto &f: files) {
-        qDebug() << "f: " << f;
-        QFile file = QFile(f);
-        if(file.exists()) {
-            file.remove();
-            qDebug() << "file " << file.filesystemFileName() << " removed.";
-        }
-    } */
     if(this->tempDir != nullptr) {
 	    delete this->tempDir;
 	    this->tempDir = nullptr;
@@ -543,14 +527,13 @@ void MainWindow::onWalletRpcStarted() {
 
 void MainWindow::onWalletRpcStopped() {
     // Todo: is there something to do? Shutdown or? Maybe check if it was intentional, if not inform user!
-    // TODO: delete wallet files
     delete this->walletRpcManager;
     this->walletRpcManager = nullptr;
     // QApplication::exit(0); // find better solution because this will end in a race condition
 }
 
 void MainWindow::onWalletRpcError() {
-    // Todo: inform user before exit
+    QMessageBox::critical(this, "Error", "An error occurred related to wallet rpc. Application will exit.");
     QApplication::exit(1);
 }
 
@@ -582,12 +565,7 @@ void MainWindow::checkWalletRpcConnection(int attempts, int delayBetweenAttempts
 }
 
 void MainWindow::onWalletRpcReady() {
-    // load wallet
     this->loadWallet();
-}
-
-void MainWindow::awaitWalletRpcForMax(int milliseconds) {
-    qDebug() << "Wait for wallet rpc for more: " << milliseconds << "milliseconds";
 }
 
 void MainWindow::onWalletRpcFailed() {
@@ -648,7 +626,6 @@ bool MainWindow::isViewOnlyWallet(const QString& qrCode) {
 
     // Validate the parsed data
     if (!this->primaryAddress.isEmpty() && !this->privateViewKey.isEmpty()) {
-        // TODO: Add any additional validation you need and set wallet
         ui->networkLabel->setText(this->network.toUpper());
         ui->networkLabel->setVisible(this->network != NETWORK['4']);
         return true;
@@ -668,20 +645,19 @@ void MainWindow::removeQrCodeScanWidgetFromUi(QrCodeScanWidget *&widget) {
 void MainWindow::walletSyncProgress(bool active, int periodInMilliseconds) {
     static QTimer* syncTimer = nullptr;
 
-    if (active) {
-        if (!syncTimer) {
-            syncTimer = new QTimer(this);
-            connect(syncTimer, &QTimer::timeout, this, &MainWindow::updateWalletSyncProgress);
-        }
-
-        syncTimer->start(periodInMilliseconds);
-    } else {
+    if (!active) {
         if (syncTimer) {
             syncTimer->stop();
             delete syncTimer;
             syncTimer = nullptr;
         }
+        return;
     }
+    if (!syncTimer) {
+        syncTimer = new QTimer(this);
+        connect(syncTimer, &QTimer::timeout, this, &MainWindow::updateWalletSyncProgress);
+    }
+    syncTimer->start(periodInMilliseconds);
 }
 
 QString MainWindow::relativeTimeFromMilliseconds(int milliseconds) {
@@ -729,7 +705,6 @@ void MainWindow::updateWalletSyncProgress() {
     ui->missingBlocks->setText(QString("Blocks missing: %1").arg(missing));
     ui->syncETA->setText((eta!=-1)?(QString("ETA: %1").arg(this->relativeTimeFromMilliseconds(eta))):QString("ETA: calculating..."));
     ui->avgBlockPerSecond->setText((avgBlocksPerSecond!=-1)?this->relativeBlocksPerSecond(avgBlocksPerSecond):QString(""));
-    // ui->syncProgressBar->setDisabled(percentage == 0); // fix for css glitch
     ui->syncProgressBar->setValue((0 < percentage && percentage < 15)?14:percentage); // fix for css glitch
     ui->syncProgressBar->setTextVisible(percentage > 14); // fix for css glitch
     if(missing == 0 && networkHeight != 0  && networkHeight == walletHeight) {
@@ -740,23 +715,18 @@ void MainWindow::updateWalletSyncProgress() {
         ui->dotIndicator->setCurrentStep(nextIndex);
         qDebug() << "syncing wallet done";
     }
-    //this->walletRpc->refresh(this->restoreHeight);
     BalanceResult br = this->walletRpc->getBalance();
     qDebug() << "balance: " << br.balance << " unlocked: " << br.unlocked_balance;
 }
 
 QString MainWindow::getFingerprint() {
-    // Convert QString to std::string
+    return QCryptographicHash::hash(QByteArray::fromStdString(this->primaryAddress.toStdString()), QCryptographicHash::Sha256).toHex().right(6).toUpper();
+    /**
     std::string addressStr = this->primaryAddress.toStdString();
-
-    // Compute SHA256 hash
     QByteArray hash = QCryptographicHash::hash(QByteArray::fromStdString(addressStr), QCryptographicHash::Sha256);
-
-    // Convert hash to hexadecimal string
     QString hashHex = hash.toHex();
-
-    // Return the last 6 characters
     return hashHex.right(6).toUpper();
+        */
 }
 
 void MainWindow::setupSendXmrInputs()
@@ -772,7 +742,6 @@ void MainWindow::setupSendXmrInputs()
     amountRegexValidator = new QRegularExpressionValidator(amountRx, this);
     ui->amount->setValidator(amountRegexValidator);
     connect(ui->amount, &QLineEdit::textChanged, this, &MainWindow::checkAmount);
-
     // Initial state
     updateSendButtonState();
 }
@@ -811,15 +780,9 @@ void MainWindow::updateSendButtonState()
         && this->getAmountValue() <= this->availableBalance
         && (estimatedFee != INVALID_FEE)
         && estimatedFee <= this->availableBalance
-        );
-
-    if(estimatedFee != INVALID_FEE) {
-        ui->estimatedFee->setText(QString("Estimated fee: %1").arg(this->relativeXmr(estimatedFee)));
-        ui->estimatedFee->setEnabled(true);
-    } else {
-        ui->estimatedFee->setText("");
-        ui->estimatedFee->setEnabled(true);
-    }
+    );
+    ui->estimatedFee->setEnabled(estimatedFee != INVALID_FEE);
+    ui->estimatedFee->setText((estimatedFee == INVALID_FEE)?"":(QString("Estimated fee: %1").arg(this->relativeXmr(estimatedFee))));
 }
 
 unsigned int MainWindow::estimateTotalTransfer() {
@@ -830,14 +793,14 @@ unsigned int MainWindow::estimateTotalTransfer() {
     QList<Destination> destinations;
     destinations.append(Destination(this->getAmountValue(), (!ui->address->text().isEmpty()&&ui->address->hasAcceptableInput())?ui->address->text():this->primaryAddress));
     TransferResult tr = this->walletRpc->transfer(destinations);
-    if(!tr.error) {
+    if(tr.error) {
         if(!this->lockedUnsignedTransaction)
-                this->unsignedTransaction = tr.unsigned_txset;
-        return tr.fee;
+            this->unsignedTransaction = nullptr;
+        return INVALID_FEE;
     }
     if(!this->lockedUnsignedTransaction)
-        this->unsignedTransaction = nullptr;
-    return INVALID_FEE;
+        this->unsignedTransaction = tr.unsigned_txset;
+    return tr.fee;
 }
 
 unsigned int MainWindow::getAmountValue()

@@ -126,7 +126,6 @@ private slots:
     void onWalletRpcStopped();
     void onWalletRpcError();
     void onWalletRpcReady();
-    void awaitWalletRpcForMax(int milliseconds);
     void onWalletRpcFailed();
     void onWalletLoaded();
     void onWalletError();

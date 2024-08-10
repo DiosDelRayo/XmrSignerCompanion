@@ -32,6 +32,7 @@ QAddressLineEdit::QAddressLineEdit(QWidget *parent): QLineEdit(parent) {
     frameLayout->setAlignment(Qt::AlignCenter | Qt::AlignVCenter);
     frame->setStyleSheet("QFrame { background: rgba(0, 0, 0, 0.8); border: none; border-radius: 28px; padding: 2px; }");
     frame->setFixedSize(160, 56);
+    frame->setVisible(false); // deactivate for now
 
     scanButton = new QPushButton(frame);
     pasteButton = new QPushButton(frame);
