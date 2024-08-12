@@ -313,24 +313,28 @@ SubmitTransferResult WalletJsonRpc::submitTransfer(const QString &tx_data_hex)
             QJsonArray list = result["tx_hash_list"].toArray();
             for(int i=0;i<list.count();i++)
                 out.tx_hash_list.append(list[i].toString());
-
         }
     }
     return out;
 }
 
-TransferByTxIdResult WalletJsonRpc::getTransferByTxId(QString txid, unsigned int account_index) {
+TransferByTxIdResult WalletJsonRpc::getTransferByTxId(const QString &txid, unsigned int account_index) {
+    qDebug() << "getTransferByTxId" << txid << ", " << account_index << ")";
     QJsonObject params;
     params["txid"] = txid;
     if(account_index != UINT_MAX)
         params["account_index"] = static_cast<qint64>(account_index);
 
+    qDebug() << "getTransferByTxId: params: " << params;
     QJsonObject data = makeRequest("get_transfer_by_txid", params);
+    qDebug() << "getTransferByTxId: data: " << data;
 
     if(data.contains("error")) {
         QJsonObject error = data["error"].toObject();
         return TransferByTxIdResult(true, error["code"].toInt(), error["message"].toString());
     }
+
+    qDebug() << "getTransferByTxId: result: " << data;
 
     if(data.contains("result")) {
         TransferByTxIdResult out;
@@ -342,6 +346,7 @@ TransferByTxIdResult WalletJsonRpc::getTransferByTxId(QString txid, unsigned int
             for(int i=0; i<transfers.count(); i++)
                 out.transfers.append(this->fromTransferObject(transfers[i].toObject()));
         }
+	return out;
     }
     return TransferByTxIdResult(true, 0, "WTF just happend here in WalletJsonRpc?");
 }
@@ -416,11 +421,11 @@ QString WalletJsonRpc::exportSimpleOutputs(bool all)
     return eor.outputs_data_hex;
 }
 
-KeyImageImportResult WalletJsonRpc::importKeyImages(const QJsonArray &encrypted_key_images_blob, unsigned int offset)
+KeyImageImportResult WalletJsonRpc::importKeyImages(const QString &encrypted_key_images_blob, unsigned int offset)
 {
     qDebug() << "rpc:import_key_images: " << encrypted_key_images_blob << " offset: " << offset;
     QJsonObject params;
-    if(offset != 0)
+    if(offset != -1)
             params["offset"] = static_cast<int>(offset);
     params["encrypted_key_images_blob"] = encrypted_key_images_blob;
 
@@ -441,35 +446,6 @@ KeyImageImportResult WalletJsonRpc::importKeyImages(const QJsonArray &encrypted_
             );
     }
     return KeyImageImportResult(true, 0, "WTF happenend in WalletJsonRpc?"); // shouldn't reach here stupid!
-}
-
-KeyImageImportResult WalletJsonRpc::importKeyImagesFromByteString(const std::string& data, unsigned int offset) {
-    return this->importKeyImages(this->parseKeyImages(data), offset);
-}
-
-QJsonArray WalletJsonRpc::parseKeyImages(const std::string& binaryData) {
-    QByteArray data = QByteArray::fromStdString(binaryData);
-
-    // Skip the header "Monero key image export" and version bytes
-    int offset = 22 + 3;  // Adjust if necessary
-
-    QJsonArray keyImages;
-
-    while (offset < data.size()) {
-        // Assuming key image is 32 bytes and signature is 64 bytes
-        QByteArray keyImage = data.mid(offset, 32);
-        offset += 32;
-        QByteArray signature = data.mid(offset, 64);
-        offset += 64;
-
-        QJsonObject keyImageObj;
-        keyImageObj["key_image"] = QString(keyImage.toHex());
-        keyImageObj["signature"] = QString(signature.toHex());
-
-        keyImages.append(keyImageObj);
-    }
-
-    return keyImages;
 }
 
 RefreshResult WalletJsonRpc::refresh(unsigned int start_height)

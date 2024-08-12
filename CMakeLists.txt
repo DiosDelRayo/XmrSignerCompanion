@@ -129,6 +129,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         networkchecker.h networkchecker.cpp
         daemonjsonrpc.h daemonjsonrpc.cpp
         windowmodaldialog.h windowmodaldialog.cpp
+        pagecontroller.h
 
     )
 

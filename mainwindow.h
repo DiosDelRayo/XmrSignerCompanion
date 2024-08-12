@@ -12,6 +12,19 @@
 #include "walletjsonrpc.h"
 #include "qrcode/scanner/QrCodeScanWidget.h"
 
+#define PAGE_SCAN_VIEW_WALLET 0
+#define PAGE_CONNECT_DAEMON 1
+#define PAGE_SYNC_WALLET 2
+#define PAGE_QR_OUTPUTS 3
+#define PAGE_SCAN_KEY_IMAGES 4
+#define PAGE_SEND_XMR 5
+#define PAGE_QR_UNSIGNED_TX 6
+#define PAGE_SCAN_SIGNED_TX 7
+#define PAGE_SUBMIT_TX 8
+#define PAGE_CHANGE_BOCK_HEIGHT 9
+#define PAGE_TRANSFER_FAILED 10
+
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE

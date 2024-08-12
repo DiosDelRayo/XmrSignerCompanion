@@ -65,6 +65,9 @@ MainWindow::MainWindow(QWidget *parent)
 void MainWindow::next() {
     int currentIndex = ui->stackedWidget->currentIndex();
     int nextIndex = (currentIndex + 1) % ui->stackedWidget->count(); // Loop back to the first widget if at the last
+    if (nextIndex == 0 && currentIndex > nextIndex) { // time to leave, we finished
+        QApplication::exit(0);
+    }
     // Check logic before advancing to next step
     if (checkLogic(currentIndex, nextIndex)) {
         ui->stackedWidget->setCurrentIndex(nextIndex);
@@ -197,18 +200,18 @@ void MainWindow::syncDotIndicator(int index) {
     ui->dotIndicator->setCurrentStep(index);
 
     switch (index) {
-    case 0:
+    case PAGE_SCAN_VIEW_WALLET:
         ui->titleLabel->setText(QString("Import View Only Wallet"));
         ui->scanViewWallet->startCapture(false);
         break;
-    case 1:
+    case PAGE_CONNECT_DAEMON:
         ui->titleLabel->setText(QString("Connect"));
         ui->daemonNotFoundMessage->hide();
         ui->nextButton->setEnabled(false);
         checkNodeAddress();
         checkNodePort();
         break;
-    case 2:
+    case PAGE_SYNC_WALLET:
         ui->titleLabel->setText(QString("Synchronize Wallet"));
         if(this->daemon_url == nullptr)
             QApplication::exit(1);
@@ -217,7 +220,7 @@ void MainWindow::syncDotIndicator(int index) {
         this->walletRpc->setDaemon(this->daemon_url, true);
         this->walletSyncProgress(true);
         break;
-    case 3:
+    case PAGE_QR_OUTPUTS:
         ui->titleLabel->setText(QString("Export Outputs"));
         outputs = this->walletRpc->exportSimpleOutputs();
         qDebug() << "outputs: " << outputs;
@@ -225,12 +228,12 @@ void MainWindow::syncDotIndicator(int index) {
         this->walletSyncProgress(false);
         ui->nextButton->setEnabled(true);
         break;
-    case 4:
+    case PAGE_SCAN_KEY_IMAGES:
         ui->titleLabel->setText(QString("Import Key Images"));
         ui->scanKeyImages->startCapture(true);
         ui->nextButton->setDisabled(true);
         break;
-    case 5:
+    case PAGE_SEND_XMR:
         ui->availableAmount->setText(QString("Available: %1").arg(this->relativeXmr(this->walletRpc->getBalance().unlocked_balance)));
         this->removeQrCodeScanWidgetFromUi(ui->scanKeyImages);
         this->setupSendXmrInputs();
@@ -240,7 +243,7 @@ void MainWindow::syncDotIndicator(int index) {
         this->lockedUnsignedTransaction = false;
         this->unsignedTransaction = nullptr;
         break;
-    case 6:
+    case PAGE_QR_UNSIGNED_TX:
         if(!this->lockedUnsignedTransaction || this->unsignedTransaction== nullptr || this->unsignedTransaction.isEmpty())
             return;
         this->syncAvailableXmr(false);
@@ -249,14 +252,15 @@ void MainWindow::syncDotIndicator(int index) {
         ui->titleLabel->setText(QString("Export Unsigned Transaction"));
         ui->nextButton->setEnabled(true);
         break;
-    case 7:
+    case PAGE_SCAN_SIGNED_TX:
         ui->titleLabel->setText("Import Signed Transaction");
         ui->scanSignedTransaction->startCapture(true);
         ui->nextButton->setDisabled(true);
         break;
-    case 8:
+    case PAGE_SUBMIT_TX:
         ui->titleLabel->setText("");
         this->renderTxProgress();
+        this->transactionsProgress(true, 20000);
         ui->txids->setText(QString("Tx Id's: %1").arg(this->txIds.join(", ")));
         ui->blocks->setVisible(false);
         ui->nextButton->setDisabled(true);
@@ -268,43 +272,48 @@ void MainWindow::syncDotIndicator(int index) {
 }
 
 void MainWindow::transactionsProgress(bool active, int periodInMilliseconds) {
+    qDebug() << "transactionsProgress(" << active << ", " << periodInMilliseconds << ")";
+
     static QTimer* syncTimer = nullptr;
 
-    if (active) {
-        if (!syncTimer) {
-            syncTimer = new QTimer(this);
-            connect(syncTimer, &QTimer::timeout, this, &MainWindow::renderTxProgress);
-        }
-
-        syncTimer->start(periodInMilliseconds);
-    } else {
+    if (!active) {
+        qDebug() << "transactionsProgress stopping...";
         if (syncTimer) {
             syncTimer->stop();
             delete syncTimer;
             syncTimer = nullptr;
         }
+        return;
     }
+    qDebug() << "transactionsProgress starting...";
+    if (!syncTimer) {
+        syncTimer = new QTimer(this);
+        connect(syncTimer, &QTimer::timeout, this, &MainWindow::renderTxProgress);
+    }
+    syncTimer->start(periodInMilliseconds);
 };
 
 void MainWindow::renderTxProgress() {
+    qDebug() << "renderTxProgress()";
     TransferByTxIdResult result = this->walletRpc->getTransferByTxId(this->txIds.first());
     if(result.error) {
         qDebug() << "error: " << result.error_message;
+        // TODO: show error dialog and exit.
         return;
     }
     switch (result.transfer.type) {
     case TransferType::Pending:
-    ui->sendingStatus->setText("Sending...");
+        ui->sendingStatus->setText("Sending...");
         break;
     case TransferType::Pool:
-    ui->sendingStatus->setText("Waiting for first confirmation...");
+        ui->sendingStatus->setText("Waiting for first confirmation...");
         break;
     case TransferType::Out:
         if(result.transfer.confirmations >= 10) {
             ui->sendingStatus->setText(QString("Done! The receiver can now spend the %1.").arg(this->relativeXmr(result.transfer.amount)));
             break;
         }
-    ui->sendingStatus->setText("Waiting for first confirmation...");
+        ui->sendingStatus->setText("Waiting for 10 confirmations...");
         break;
     default:
         break;
@@ -374,7 +383,7 @@ void MainWindow::onKeyImagesScanFinished(bool successful) {
     qDebug() << "keyimages: ur:type:" << ui->scanKeyImages->getURType();
     std::string data = ui->scanKeyImages->getURData();
     qDebug() << "keyimages: " << data;
-    KeyImageImportResult result = this->walletRpc->importKeyImagesFromByteString(QByteArray::fromStdString(data).toHex().toStdString(), this->restoreHeight);
+    KeyImageImportResult result = this->walletRpc->importKeyImages(QString(QByteArray::fromStdString(data).toHex()), this->restoreHeight);
     qDebug() << "imported keyimages, height: " << result.height << ", spent: " << result.spent << ", unspent: " << result.unspent;
     if(result.height >= 0) {
         qDebug("go next");
@@ -402,14 +411,18 @@ void MainWindow::onSignedTransactionScanFinished(bool successful) {
     qDebug() << "signed tx: ur:type:" << ui->scanSignedTransaction->getURType();
     std::string data = ui->scanSignedTransaction->getURData();
     qDebug() << "signed tx: " << data;
+    qDebug() << " balance: " << this->walletRpc->getBalance().balance;
     SubmitTransferResult result = this->walletRpc->submitTransfer(QByteArray::fromStdString(data).toHex());
     qDebug() << "submit error: " << result.error << (result.error?(QString("(%1)").arg(result.error_message)):"") << " tx ids: " << result.tx_hash_list;
     if(result.error || result.tx_hash_list.isEmpty()) {
         QMessageBox::critical(this, "Transaction failed", QString("Wallet error: %1.").arg(result.error_message));
     }
     qDebug("success: onSignedTransactionScanFinished();");
-    this->txIds.fromList(result.tx_hash_list);
+    this->txIds = result.tx_hash_list;
+    qDebug() << "onSignedTransactionScanFinished:this->txIds: " << this->txIds;
+    qDebug() << " balance: " << this->walletRpc->getBalance().balance;
     this->walletRpc->rescanSpent();
+    qDebug() << " balance: " << this->walletRpc->getBalance().balance;
     this->walletRpc->refresh();
     qDebug() << " balance: " << this->walletRpc->getBalance().balance;
     this->next();

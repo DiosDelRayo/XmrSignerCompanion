@@ -373,16 +373,12 @@ public:
     ExportOutputsResult exportOutputs(bool all = true);
     QString exportSimpleOutputs(bool all = true);
     KeyImageImportResult importKeyImages(
-        const QJsonArray &encrypted_key_images_blob,
+        const QString &encrypted_key_images_blob,
         unsigned int offset = -1
         );
 
-    TransferByTxIdResult getTransferByTxId(QString txid, unsigned int account_index = UINT_MAX);
+    TransferByTxIdResult getTransferByTxId(const QString &txid, unsigned int account_index = UINT_MAX);
 
-    KeyImageImportResult importKeyImagesFromByteString(
-        const std::string& data,
-        unsigned int offset = -1
-        );
     RefreshResult refresh(unsigned int start_height = 0);
     bool rescanSpent();
     LoadWalletResult loadWallet(
