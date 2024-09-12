@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // SPDX-FileCopyrightText: 2020-2024 The Monero Project
 
-#ifndef QRSCANTHREAD_H_
-#define QRSCANTHREAD_H_
+#ifndef QRSCANTHREAD_H
+#define QRSCANTHREAD_H
 
 #include <QThread>
 #include <QMutex>
 #include <QWaitCondition>
 #include <QEvent>
-#include <QCamera>
+#include <QImage>
 
 #include <ZXing/ReadBarcode.h>
 

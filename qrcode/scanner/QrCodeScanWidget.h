@@ -1,15 +1,21 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // SPDX-FileCopyrightText: 2020-2024 The Monero Project
 
-#ifndef FEATHER_QRCODESCANWIDGET_H
-#define FEATHER_QRCODESCANWIDGET_H
+#ifndef QRCODESCANWIDGET_H
+#define QRCODESCANWIDGET_H
 
 #include <QWidget>
 #include <QCamera>
 #include <QScopedPointer>
-#include <QMediaCaptureSession>
 #include <QTimer>
+
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+#include <QAbstractVideoSurface>
+#include <QCameraViewfinder>
+#else
+#include <QMediaCaptureSession>
 #include <QVideoSink>
+#endif
 
 #include "QrScanThread.h"
 
@@ -63,8 +69,12 @@ private:
     bool m_scan_ur = false;
     QrScanThread *m_thread;
     QScopedPointer<QCamera> m_camera;
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    QScopedPointer<QCameraViewfinder> m_viewfinder;
+#else
     QMediaCaptureSession m_captureSession;
     QVideoSink m_sink;
+#endif
     ur::URDecoder m_decoder;
     bool m_done = false;
     bool m_handleFrames = true;
@@ -112,4 +122,4 @@ public slots:
     void onTotalUrFrames(int totalFrames);
 };
 
-#endif //FEATHER_QRCODESCANWIDGET_H
+#endif //QRCODESCANWIDGET_H

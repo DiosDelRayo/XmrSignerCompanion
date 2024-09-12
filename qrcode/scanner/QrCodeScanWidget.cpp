@@ -12,10 +12,20 @@
 #include <algorithm>
 #include <chrono>
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+#include <QMediaDevices>
+#include <QPermission>
+#else
+#include <QCameraInfo>
+#endif
+
+
 QrCodeScanWidget::QrCodeScanWidget(QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::QrCodeScanWidget)
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     , m_sink(new QVideoSink(this))
+#endif
     , m_thread(new QrScanThread(this))
     , m_frameState(FrameState::Idle)
     , m_animationProgress(0)
@@ -35,7 +45,11 @@ QrCodeScanWidget::QrCodeScanWidget(QWidget *parent)
     this->refreshCameraList();
     
     connect(ui->combo_camera, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &QrCodeScanWidget::onCameraSwitched);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     connect(ui->viewfinder->videoSink(), &QVideoSink::videoFrameChanged, this, &QrCodeScanWidget::handleFrameCaptured);
+#else
+    connect(ui->viewfinder, &QVideoWidget::videoFrameChanged, this, &QrCodeScanWidget::handleFrameCaptured);
+#endif
     connect(ui->btn_refresh, &QPushButton::clicked, [this]{
         this->refreshCameraList();
         this->onCameraSwitched(0);
@@ -65,8 +79,12 @@ QrCodeScanWidget::QrCodeScanWidget(QWidget *parent)
 
         float exposure = 0.00033 * value;
         m_camera->setExposureMode(QCamera::ExposureManual);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
         m_camera->setManualExposureTime(exposure);
         // conf()->set(Config::cameraExposureTime, value);
+#else
+	m_camera->exposure()->setManualAperture(exposure);
+#endif
     });
 
     ui->check_manualExposure->setVisible(false);
@@ -352,6 +370,7 @@ void QrCodeScanWidget::startCapture(bool scan_ur) {
 
     updateFrameState(FrameState::Idle);
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     QCameraPermission cameraPermission;
     switch (qApp->checkPermission(cameraPermission)) {
         case Qt::PermissionStatus::Undetermined:
@@ -369,6 +388,7 @@ void QrCodeScanWidget::startCapture(bool scan_ur) {
             qDebug() << "Camera permission granted";
             break;
     }
+#endif
 
     if (ui->combo_camera->count() < 1) {
         ui->frame_error->setText("No cameras found. Attach a camera and press 'Refresh'.");
@@ -404,10 +424,17 @@ void QrCodeScanWidget::pause() {
 
 void QrCodeScanWidget::refreshCameraList() {
     ui->combo_camera->clear();
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     const QList<QCameraDevice> cameras = QMediaDevices::videoInputs();
     for (const auto &camera : cameras) {
         ui->combo_camera->addItem(camera.description());
     }
+#else
+    const QList<QCameraInfo> cameras = QCameraInfo::availableCameras();
+    for (const auto &cameraInfo : cameras) {
+        ui->combo_camera->addItem(cameraInfo.description());
+    }
+#endif
 }
 
 void QrCodeScanWidget::handleFrameCaptured(const QVideoFrame &frame) {
@@ -442,7 +469,11 @@ QImage QrCodeScanWidget::videoFrameToImage(const QVideoFrame &videoFrame)
 
 
 void QrCodeScanWidget::onCameraSwitched(int index) {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     const QList<QCameraDevice> cameras = QMediaDevices::videoInputs();
+#else
+    const QList<QCameraInfo> cameras = QCameraInfo::availableCameras();
+#endif
 
     if (index < 0) {
         return;
@@ -458,9 +489,17 @@ void QrCodeScanWidget::onCameraSwitched(int index) {
 
     ui->frame_error->setVisible(false);
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     m_camera.reset(new QCamera(cameras.at(index), this));
     m_captureSession.setCamera(m_camera.data());
     m_captureSession.setVideoOutput(ui->viewfinder);
+#else
+    m_camera.reset(new QCamera(cameras.at(index)));
+    m_viewfinder.reset(new QCameraViewfinder());
+    m_camera->setViewfinder(m_viewfinder.data());
+    ui->viewfinder->setLayout(new QVBoxLayout());
+    ui->viewfinder->layout()->addWidget(m_viewfinder.data());
+#endif
 
     bool manualExposureSupported = m_camera->isExposureModeSupported(QCamera::ExposureManual);
     ui->check_manualExposure->setVisible(manualExposureSupported);
@@ -471,12 +510,22 @@ void QrCodeScanWidget::onCameraSwitched(int index) {
         qDebug() << "Barcode exposure mode is supported";
     }
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     connect(m_camera.data(), &QCamera::activeChanged, [this](bool active){
         ui->frame_error->setText("Lost connection to camera");
         ui->frame_error->setVisible(!active);
         if (!active)
                 qDebug() << "Lost connection to camera";
     });
+#else
+    connect(m_camera.data(), &QCamera::statusChanged, [this](QCamera::Status status){
+        bool active = (status == QCamera::ActiveStatus);
+        ui->frame_error->setText("Lost connection to camera");
+        ui->frame_error->setVisible(!active);
+        if (!active)
+            qDebug() << "Lost connection to camera";
+    });
+#endif
 
     connect(m_camera.data(), &QCamera::errorOccurred, [this](QCamera::Error error, const QString &errorString) {
         if (error == QCamera::Error::CameraError) {
