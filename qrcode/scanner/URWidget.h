@@ -34,7 +34,11 @@ private:
     ur::UREncoder *m_urencoder = nullptr;
     QrCode *m_code = nullptr;
     QList<std::string> allParts;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     qsizetype currentIndex = 0;
+#else
+    int currentIndex = 0;
+#endif
     
     std::string m_data;
     QString m_type;
