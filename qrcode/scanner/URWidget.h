@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // SPDX-FileCopyrightText: 2020-2024 The Monero Project
 
-#ifndef FEATHER_URWIDGET_H
-#define FEATHER_URWIDGET_H
+#ifndef URWIDGET_H
+#define URWIDGET_H
 
 #include <QWidget>
 #include <QTimer>
@@ -24,6 +24,9 @@ public:
     
     void setData(const QString &type, const std::string &data);
 
+public slots:
+    void onSettingsChanged(int fragmentLength, int speed, bool fountainCodeEnabled);
+
 private slots:
     void nextQR();
     void setOptions();
@@ -42,6 +45,9 @@ private:
     
     std::string m_data;
     QString m_type;
+    int m_fragmentLength = 150;
+    int m_speed = 80;
+    bool m_fountainCodeEnabled = false;
 };
 
-#endif //FEATHER_URWIDGET_H
+#endif //URWIDGET_H

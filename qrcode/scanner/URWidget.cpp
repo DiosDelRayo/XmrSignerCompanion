@@ -3,7 +3,7 @@
 
 #include "URWidget.h"
 
-#include "dialog/URSettingsDialog.h"
+#include "URSettingsDialog.h"
 #include "ui_URWidget.h"
 
 URWidget::URWidget(QWidget *parent)
@@ -34,7 +34,7 @@ void URWidget::setData(const QString &type, const std::string &data) {
     ur::CborLite::encodeBytes(cbor, a);
     ur::UR h = ur::UR(type_std, cbor);
 
-    int bytesPerFragment = 150;
+    int bytesPerFragment = m_fragmentLength;
 
     delete m_urencoder;
     m_urencoder = new ur::UREncoder(h, bytesPerFragment);
@@ -43,7 +43,7 @@ void URWidget::setData(const QString &type, const std::string &data) {
         allParts.append(m_urencoder->next_part());
     }
 
-    m_timer.setInterval(80);
+    m_timer.setInterval(m_speed);
     m_timer.start();
 }
 
@@ -51,7 +51,7 @@ void URWidget::nextQR() {
     currentIndex = currentIndex % m_urencoder->seq_len();
 
     std::string data;
-    if (false) {
+    if (m_fountainCodeEnabled) {
         data = m_urencoder->next_part();
     } else {
         data = allParts[currentIndex];
@@ -66,9 +66,15 @@ void URWidget::nextQR() {
 }
 
 void URWidget::setOptions() {
-    URSettingsDialog dialog{this};
+    URSettingsDialog dialog{this, m_fragmentLength, m_speed, m_fountainCodeEnabled};
     dialog.exec();
     this->setData(m_type, m_data);
+}
+
+void URWidget::onSettingsChanged(int fragmentLength, int speed, bool fountainCodeEnabled) {
+    m_fragmentLength = fragmentLength;
+    m_speed = speed;
+    m_fountainCodeEnabled = fountainCodeEnabled;
 }
 
 URWidget::~URWidget() {

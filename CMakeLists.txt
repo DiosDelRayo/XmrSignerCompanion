@@ -29,9 +29,6 @@ set(PROJECT_SOURCES
         qaddresslineedit.cpp
         qamountlineedit.h
         qamountlineedit.cpp
-        dialog/URSettingsDialog.cpp
-        dialog/URSettingsDialog.h
-        dialog/URSettingsDialog.ui
         qrcode/QrCode.cpp
         qrcode/QrCode.h
         qrcode/QrCode_p.h
@@ -41,6 +38,9 @@ set(PROJECT_SOURCES
         qrcode/utils/QrCodeUtils.cpp
         qrcode/QrCodeWidget.h
         qrcode/QrCodeWidget.cpp
+        qrcode/scanner/URSettingsDialog.cpp
+        qrcode/scanner/URSettingsDialog.h
+        qrcode/scanner/URSettingsDialog.ui
         qrcode/scanner/QrCodeScanWidget.h
         qrcode/scanner/QrCodeScanWidget.cpp
         qrcode/scanner/QrCodeScanWidget.ui
